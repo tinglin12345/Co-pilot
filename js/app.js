@@ -995,9 +995,10 @@
     mountOverlay(`
       <div class="mask" data-close-drawer></div>
       <aside class="drawer" id="planTuneDrawer">
+        <!-- 标题栏不放「已调整 N 天」角标：页脚提示已经说了同一件事，
+             日历上每个被改过的格子还有紫边条和「调整」角标，标题再挂一个是第三遍 -->
         <div class="drawer-head">
           <span class="grow">${PLAN_TUNE_TEXT.title}</span>
-          ${n ? `<span class="tag-tuned">已调整 ${n} 天</span>` : ''}
           <button class="icon-btn" title="全屏">${expandIco}</button>
           <button class="icon-btn" data-close-drawer title="关闭">${closeX}</button>
         </div>
@@ -2159,7 +2160,10 @@
        opts.picked 传上次挑中的工单编号，重新编辑那天时照原样勾回来。 */
     const pickable = !!(opts && opts.pickable);
     const picked = opts && opts.picked;
-    const isOn = (o) => !picked || picked.indexOf(o.no) >= 0;
+    /* 默认一张都不勾 —— 调整的对象是用户自己要挑的那几张工单，
+       预先全勾上等于替他做了「整天都搬走」的决定，而且想只调一张时
+       得先取消二十几个勾。重新编辑已调整过的那天才按上次挑的勾回来。 */
+    const isOn = (o) => (picked ? picked.indexOf(o.no) >= 0 : false);
 
     const orders = orderList.map((o) => `
       <div class="order-card${pickable && isOn(o) ? ' picked' : ''}"
@@ -2191,8 +2195,8 @@
               <!-- 项目跟着被点的那一天走，与应用确认里的明细表同一个口径；
                    没有 srcKey（从导航直接看这个弹窗）时退回静态示例项目 -->
               <div class="adjust-proj-row">
-                <span class="checkbox${pickable ? ' on' : ''}"
-                      ${pickable ? 'data-pick-all' : ''}><span class="check-box"></span></span>
+                <!-- 全选框的选中态由 syncPickUi 按实际勾选算，不在这里写死 -->
+                <span class="checkbox" ${pickable ? 'data-pick-all' : ''}><span class="check-box"></span></span>
                 ${dd(adjustProject, [adjustProject], 'control-w-lg')}
                 <!-- pickable 时这里报的是「已选」的量，随勾选实时变 ——
                      搬走几张工单由勾选决定，表头若还报全天的量就对不上了 -->
@@ -2207,8 +2211,11 @@
                 <span class="sum">原计划日期：${planDateText}</span>
               </div>
 
+              <!-- 默认档位只在方案 C 改成「仅调整此保养」：调一天的保养日期
+                   本来就是一次性的，默认把未来所有保养都跟着挪，影响面远超用户意图。
+                   A/B 已冻结，所以按 isC() 分流，不动那两套的默认值。 -->
               <div class="adjust-radio-block">
-                <label class="radio" data-radio="scope" data-val="one">
+                <label class="radio${isC() ? ' on' : ''}" data-radio="scope" data-val="one">
                   <span class="radio-dot"></span><span>仅调整此保养</span>
                 </label>
                 <div class="sub">
@@ -2219,7 +2226,7 @@
               </div>
 
               <div class="adjust-radio-block">
-                <label class="radio on" data-radio="scope" data-val="all">
+                <label class="radio${isC() ? '' : ' on'}" data-radio="scope" data-val="all">
                   <span class="radio-dot"></span><span>调整所有保养</span>
                 </label>
                 <div class="sub"><span>调整后未来全部保养</span></div>

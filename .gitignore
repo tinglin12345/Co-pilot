@@ -4,4 +4,8 @@
 _*.html
 _*.js
 _*.py
+_*.sh
 _*.png
+
+# 早期的本地分享暂存目录，已被 docs/ 取代（docs/ 才是 Pages 的发布位置）
+share/

@@ -872,17 +872,46 @@
 }
 
 .mini-cell {
-  height: 46px;
+  /* 46 → 48px：顶部要放一行「调整前 / 调整后」标记，标记是占位 span 而非
+     绝对定位，高度得实打实留出来。行间距同时从 2px 收到 1px，
+     整张日历因此只高了 12px —— 这个弹窗在小窗口里本来就顶到底边，
+     为一个 10px 的小标签多占 48px 不划算。 */
+  height: 48px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 1px;
   border-radius: var(--radius);
   cursor: pointer;
   font-size: 13px;
   color: var(--text);
 }
+
+/* 前后标记。做得比日期和台数都弱、都小 —— 它只负责点出哪两格是这次调整的
+   两端，不该抢走选日期时真正要看的负载信息。
+   .empty 用 visibility 而非 display:none，空位也要占住那 14px，
+   否则有标记的格子会比旁边高一截，整排日期的对齐就散了。 */
+.mini-cell .mc-tag {
+  height: 14px;
+  line-height: 14px;
+  padding: 0 4px;
+  border-radius: 7px;
+  font-size: 10px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.mini-cell .mc-tag.empty { visibility: hidden; }
+
+/* 调整前：中性灰，是个参照点，不是用户刚做的选择 */
+.mini-cell .mc-tag.before { background: var(--bg-head); color: var(--text-3); }
+
+/* 调整后：落在蓝底的选中格上，所以反白才看得清 */
+.mini-cell .mc-tag.after { background: #fff; color: var(--primary); font-weight: 600; }
+
+/* 原日期恰好也是选中格时（刚打开、还没挪），灰底在蓝底上糊成一片 */
+.mini-cell.selected .mc-tag.before { background: #fff; color: var(--primary); }
 
 .mini-cell:hover { background: var(--bg-hover); }
 .mini-cell.dim { color: var(--text-4); }

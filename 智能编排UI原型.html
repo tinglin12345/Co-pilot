@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<!-- 本文件由 build.js 自动生成（2026-10-08 09:16:53），已内联全部样式与脚本，
+<!-- 本文件由 build.js 自动生成（2026-10-08 09:29:45），已内联全部样式与脚本，
      可直接双击打开或发送给他人，无需任何外部文件与网络。
      请勿直接编辑此文件 —— 改动请在 css/ 与 js/ 下进行，然后重新执行 node build.js -->
 <meta charset="UTF-8" />
@@ -1234,17 +1234,46 @@ svg { display: block; }
 }
 
 .mini-cell {
-  height: 46px;
+  /* 46 → 48px：顶部要放一行「调整前 / 调整后」标记，标记是占位 span 而非
+     绝对定位，高度得实打实留出来。行间距同时从 2px 收到 1px，
+     整张日历因此只高了 12px —— 这个弹窗在小窗口里本来就顶到底边，
+     为一个 10px 的小标签多占 48px 不划算。 */
+  height: 48px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 1px;
   border-radius: var(--radius);
   cursor: pointer;
   font-size: 13px;
   color: var(--text);
 }
+
+/* 前后标记。做得比日期和台数都弱、都小 —— 它只负责点出哪两格是这次调整的
+   两端，不该抢走选日期时真正要看的负载信息。
+   .empty 用 visibility 而非 display:none，空位也要占住那 14px，
+   否则有标记的格子会比旁边高一截，整排日期的对齐就散了。 */
+.mini-cell .mc-tag {
+  height: 14px;
+  line-height: 14px;
+  padding: 0 4px;
+  border-radius: 7px;
+  font-size: 10px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.mini-cell .mc-tag.empty { visibility: hidden; }
+
+/* 调整前：中性灰，是个参照点，不是用户刚做的选择 */
+.mini-cell .mc-tag.before { background: var(--bg-head); color: var(--text-3); }
+
+/* 调整后：落在蓝底的选中格上，所以反白才看得清 */
+.mini-cell .mc-tag.after { background: #fff; color: var(--primary); font-weight: 600; }
+
+/* 原日期恰好也是选中格时（刚打开、还没挪），灰底在蓝底上糊成一片 */
+.mini-cell.selected .mc-tag.before { background: #fff; color: var(--primary); }
 
 .mini-cell:hover { background: var(--bg-hover); }
 .mini-cell.dim { color: var(--text-4); }
@@ -2880,6 +2909,15 @@ const MOVED_NOTE = {
   inFrom: (day, units) => `自 ${day} 移入 ${units} 台`,
 };
 
+/* 编排调整弹窗里迷你日历的前后标记。
+   「原计划日期：2026-10-1」只是一行文字，在日历上定位不到那一格；
+   目标日期又只有一个蓝底，看不出它相对原日期挪了多远。
+   两个格子各打一个小标签，前后关系就直接摆在同一张日历上了。 */
+const MINI_TAG = {
+  before: '调整前',
+  after: '调整后',
+};
+
 /* 现方案清空当天的说明。与「无保养安排」合并为一句，直接写在色块里，
    省掉原先单独一行灰字（任务并未取消，只是挪到了其他日期） */
 const REALLOCATED_NOTE = '已分配至其他日期';
@@ -3771,6 +3809,7 @@ const PROTO_SCREENS = [
         n: l ? l.u : 0,
         dot: l && l.u > 0 ? (l.heavy ? 'red' : 'green') : null,
         selected: d === sd,
+        isSrc: d === +srcKey.split('-')[2],
       });
     }
     while (cells.length % 7) cells.push({ dim: true });
@@ -3784,9 +3823,19 @@ const PROTO_SCREENS = [
     if (srcKey) {
       const { rows } = miniCalForMonth(srcKey, selKey);
       const head = `<div class="mini-head">${ADJUST.miniWeekdays.map((w) => `<div>${w}</div>`).join('')}</div>`;
+      /* 前后标记。每个格子都渲染这个 span（用不上时留空占位）——
+         只给两个格子加的话，那两格会多出一行，整排日期的横向对齐就散了。
+         同一格既是原日期又被选中时（刚打开、还没挪）只显示「调整前」：
+         那一刻还没有「调整后」可言。 */
+      const tag = (c) => {
+        if (c.isSrc) return `<span class="mc-tag before">${MINI_TAG.before}</span>`;
+        if (c.selected) return `<span class="mc-tag after">${MINI_TAG.after}</span>`;
+        return `<span class="mc-tag empty"></span>`;
+      };
       const body = rows.map((row) => `<div class="mini-row">` + row.map((c) => (c.dim
         ? `<div class="mini-cell dim"></div>`
         : `<div class="mini-cell ${c.selected ? 'selected' : ''}" data-mini-day="${c.d}">
+             ${tag(c)}
              <span class="mc-day">${pad2(c.d)}</span>
              <span class="mc-load">${c.dot ? `<i class="dot ${c.dot}"></i>` : ''}${c.n}</span>
            </div>`)).join('') + `</div>`).join('');
@@ -5313,10 +5362,35 @@ const PROTO_SCREENS = [
 
     mountOverlay(html);
 
+    /* 「调整后」标记要跟着选中的日期走。改 class 与文字而不是插删节点：
+       占位 span 一直在，格子高度和日期对齐就不会随点击跳动。
+       选回原计划日期时不显示「调整后」—— 那等于撤销，没有「后」。 */
+    const srcDay = srcKey ? +srcKey.split('-')[2] : null;
+    function syncMiniTags() {
+      const sel = $('#adjustModal .mini-cell.selected');
+      const selDay = sel && sel.dataset.miniDay ? +sel.dataset.miniDay : null;
+      $$('#adjustModal .mini-cell[data-mini-day]').forEach((c) => {
+        const t = $('.mc-tag', c);
+        if (!t) return;
+        const d = +c.dataset.miniDay;
+        if (d === srcDay) {
+          t.className = 'mc-tag before';
+          t.textContent = MINI_TAG.before;
+        } else if (d === selDay) {
+          t.className = 'mc-tag after';
+          t.textContent = MINI_TAG.after;
+        } else {
+          t.className = 'mc-tag empty';
+          t.textContent = '';
+        }
+      });
+    }
+
     $$('#adjustModal .mini-cell:not(.dim)').forEach((c) => {
       c.addEventListener('click', () => {
         $$('#adjustModal .mini-cell').forEach((x) => x.classList.remove('selected'));
         c.classList.add('selected');
+        syncMiniTags();
       });
     });
 

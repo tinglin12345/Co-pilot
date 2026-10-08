@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>智能编排 · 通力维保运营管理系统（UI 原型）</title>
+<link rel="stylesheet" href="css/base.css" />
+<link rel="stylesheet" href="css/modules.css" />
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- ============================== 顶栏 ============================== -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <span class="logo">KONE</span>
+      <span class="topbar-title">通力维保运营管理系统</span>
+    </div>
+    <div class="topbar-spacer"></div>
+    <div class="topbar-right">
+      <div class="topbar-item">
+        <span>通力中国/通力/中东区域/合肥分公司/合肥</span>
+        <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l7 7 7-7"/></svg>
+      </div>
+      <div class="topbar-item">
+        <span>简体中文</span>
+        <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l7 7 7-7"/></svg>
+      </div>
+      <div class="topbar-item" title="帮助">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4v.3M12 16.5h.01"/></svg>
+      </div>
+      <div class="topbar-item">
+        <span class="avatar">赵</span>
+        <span>赵德刚</span>
+        <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l7 7 7-7"/></svg>
+      </div>
+      <div class="topbar-item bell" title="通知">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 15V10a6 6 0 1 0-12 0v5l-1.6 2.5h15.2zM9.5 20a2.5 2.5 0 0 0 5 0"/></svg>
+        <span class="bell-badge">3</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================== 主体 ============================== -->
+  <div class="body">
+
+    <!-- 侧栏 -->
+    <nav class="sider">
+      <div class="sider-scroll" id="menuMount"></div>
+      <div class="sider-collapse" id="collapseBtn" title="收起/展开">
+        <svg viewBox="0 0 24 24"><path d="M14 6l-6 6 6 6M20 6l-6 6 6 6"/></svg>
+      </div>
+    </nav>
+
+    <!-- 内容 -->
+    <main class="main">
+      <!-- 兜底提示：脚本一跑起来就会被真实视图覆盖掉。
+           若脚本被拦截或引擎过旧，这段会留在页面上，告诉看的人该怎么办，
+           而不是只给一片空白 —— 之前就踩过这个坑。 -->
+      <div class="main-scroll" id="viewMount">
+        <div class="boot-fallback">
+          <div class="bf-title">页面脚本未能运行</div>
+          <p>这是一个需要 JavaScript 的交互原型。当前打开它的程序限制了脚本，或浏览器版本过旧。</p>
+          <p>请把文件保存到本地，用 <b>Chrome / Edge 浏览器</b> 直接打开（不要在聊天工具、邮件客户端的预览窗口里看）。</p>
+        </div>
+      </div>
+      <div class="back-top" title="回到顶部">
+        <svg viewBox="0 0 24 24"><path d="M12 19V6M6 11l6-6 6 6"/></svg>
+      </div>
+      <footer class="footer">苏ICP备17069255号-1</footer>
+    </main>
+
+  </div>
+</div>
+
+<!-- 浮层挂载点 -->
+<div id="overlayMount"></div>
+<div class="toast-layer" id="toastMount"></div>
+
+<!-- 原型导航（仅原型可见，非线上功能） -->
+<div class="proto">
+  <div class="proto-panel hidden" id="protoPanel">
+    <div class="proto-panel-title">原型界面导航</div>
+    <div class="proto-list" id="protoList"></div>
+  </div>
+  <div class="proto-bar">
+    <div class="proto-toggle" id="protoToggle">
+      <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <span>界面导航</span>
+    </div>
+    <!-- 切换「查看方案」之后的交互流程。都关=方案A（对比与应用为平级按钮）。
+         方案B：手动调整是独立模式，先按「手动调整」进入，日历才可点。
+         方案C：日历在对比页常态可点，点哪天调哪天，没有入口按钮。 -->
+    <div class="proto-toggle mode" id="modeToggle" title="方案B：手动调整为独立模式">
+      <svg viewBox="0 0 24 24"><path d="M4 7h10M4 12h16M4 17h7M17 4l3 3-3 3"/></svg>
+      <span>方案B</span>
+    </div>
+    <div class="proto-toggle mode" id="modeToggleC" title="方案C：日历常态可点，点哪天调哪天">
+      <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM4 9h16M9 5v14M8 13l1.5 1.5L13 11"/></svg>
+      <span>方案C</span>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

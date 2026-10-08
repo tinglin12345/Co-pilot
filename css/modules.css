@@ -1,0 +1,1854 @@
+/* =========================================================================
+   智能编排 原型 · 组件层：按钮 / 表单 / 表格 / 日历 / 抽屉 / 弹窗 / 提示
+   ========================================================================= */
+
+/* =============================== 按钮 =============================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 15px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s;
+}
+
+.btn:hover { color: var(--primary); border-color: var(--primary); }
+
+.btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 0 rgba(5, 145, 255, .1);
+}
+
+.btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+.btn-primary:active { background: var(--primary-active); border-color: var(--primary-active); }
+
+.btn-outline { color: var(--primary); border-color: var(--primary); }
+.btn-outline:hover { color: var(--primary-hover); border-color: var(--primary-hover); }
+
+.btn-link {
+  height: auto; padding: 0; border: none; background: none;
+  color: var(--primary);
+}
+.btn-link:hover { color: var(--primary-hover); border: none; }
+
+.btn-sm { height: 24px; padding: 0 8px; font-size: 13px; }
+
+.btn-dashed-block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 32px;
+  border: 1px dashed var(--primary-border);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--primary);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-dashed-block:hover { border-color: var(--primary); background: var(--primary-bg); }
+
+/* =============================== 表单控件 =============================== */
+.field { display: inline-flex; align-items: center; gap: 8px; }
+
+.field-label { font-size: 14px; color: var(--text); white-space: nowrap; }
+.field-label.req::before { content: '*'; color: var(--danger); margin-right: 4px; font-family: SimSun, sans-serif; }
+
+.control {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  min-width: 0;
+  padding: 0 11px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  gap: 8px;
+}
+
+.control:hover { border-color: var(--primary-hover); }
+
+.control .ph,
+.control .val { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.control .ph { color: var(--text-4); }
+.control .val { color: var(--text); }
+
+.control .caret { margin-left: auto; color: var(--text-4); flex: 0 0 auto; }
+.control .caret svg { width: 11px; height: 11px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+.control.open { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(5, 145, 255, .1); }
+
+.control-w-sm { width: 120px; }
+.control-w-md { width: 180px; }
+.control-w-lg { width: 220px; }
+.control-w-xl { width: 260px; }
+
+.dropdown-wrap { position: relative; display: inline-flex; }
+
+.dropdown-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 100%;
+  background: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  padding: 4px;
+  z-index: 60;
+}
+
+.dropdown-item { padding: 5px 12px; border-radius: var(--radius); cursor: pointer; font-size: 14px; }
+.dropdown-item:hover { background: var(--bg-hover); }
+.dropdown-item.sel { background: var(--primary-bg); font-weight: 500; }
+
+/* 单选 / 复选 */
+.radio, .checkbox { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; }
+
+.radio-dot {
+  width: 16px; height: 16px;
+  border: 1px solid var(--border-2);
+  border-radius: 50%;
+  background: #fff;
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.radio.on .radio-dot { border-color: var(--primary); }
+
+.radio.on .radio-dot::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+.check-box {
+  width: 16px; height: 16px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: #fff;
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.checkbox.on .check-box { background: var(--primary); border-color: var(--primary); }
+
+.checkbox.on .check-box::after {
+  content: '';
+  position: absolute;
+  left: 4.5px; top: 1.5px;
+  width: 4px; height: 8px;
+  border: 2px solid #fff;
+  border-top: 0; border-left: 0;
+  transform: rotate(45deg);
+}
+
+/* 半选态（部分工单被勾选）。画成一道横杠而不是对勾 ——
+   全选框若显示对勾，会让人以为整天的工单都要搬走 */
+.checkbox.part .check-box { background: var(--primary); border-color: var(--primary); }
+
+.checkbox.part .check-box::after {
+  content: '';
+  position: absolute;
+  left: 3px; top: 6.5px;
+  width: 8px; height: 0;
+  border-top: 2px solid #fff;
+  transform: none;
+}
+
+/* 开关 */
+.switch {
+  width: 40px; height: 20px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, .25);
+  position: relative;
+  cursor: pointer;
+  transition: background .2s;
+  flex: 0 0 auto;
+}
+
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left .2s;
+  box-shadow: 0 2px 4px rgba(0, 35, 11, .2);
+}
+
+.switch.on { background: var(--primary); }
+.switch.on::after { left: 22px; }
+
+/* 标签（可保养日期） */
+.tag-day {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 22px;
+  padding: 0 6px;
+  margin: 2px 4px 2px 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-head);
+  font-size: 12px;
+  color: var(--text);
+}
+
+.tag-day .x { color: var(--text-4); cursor: pointer; font-size: 11px; }
+.tag-day .x:hover { color: var(--text-2); }
+
+.tag-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 32px;
+  padding: 2px 6px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: #fff;
+}
+
+/* 数量输入框：外观与 .control 一致，右侧带单位后缀 */
+.num-input {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 11px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: #fff;
+  gap: 4px;
+}
+
+.num-input:hover { border-color: var(--primary-hover); }
+
+.num-input:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(5, 145, 255, .1);
+}
+
+.num-input input {
+  width: 52px;
+  border: 0;
+  outline: none;
+  padding: 0;
+  font-size: 14px;
+  color: var(--text);
+  background: transparent;
+  text-align: left;
+}
+
+/* 表格内使用的紧凑尺寸 */
+.num-input.sm { height: 28px; padding: 0 8px; }
+.num-input.sm input { width: 40px; font-size: 13px; }
+
+/* 保留原生步进箭头，方便微调 */
+.num-input .unit { font-size: 13px; color: var(--text-3); flex: 0 0 auto; }
+
+/* 工具提示图标 */
+.help-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px; height: 14px;
+  color: var(--text-3);
+  cursor: help;
+  flex: 0 0 auto;
+}
+
+.help-dot svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+.help-dot:hover { color: var(--primary); }
+
+.tooltip {
+  position: absolute;
+  z-index: 80;
+  max-width: 340px;
+  padding: 8px 10px;
+  border-radius: var(--radius-lg);
+  background: rgba(0, 0, 0, .85);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.6;
+  box-shadow: var(--shadow-2);
+  pointer-events: none;
+}
+
+/* =============================== 信息条 =============================== */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--info-border);
+  border-radius: var(--radius-lg);
+  background: var(--info-bg);
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+
+.alert .ai { color: var(--primary); flex: 0 0 auto; margin-top: 2px; }
+.alert .ai svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.alert .ac { flex: 1 1 auto; }
+.alert .ax { color: var(--text-3); cursor: pointer; flex: 0 0 auto; font-size: 13px; }
+.alert .ax:hover { color: var(--text); }
+
+/* =============================== KPI 指标条 =============================== */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--stat-bg);
+  border-radius: var(--radius-lg);
+  padding: 12px 4px;
+  margin-bottom: 14px;
+}
+
+.stat {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 0 16px;
+  min-width: 0;
+}
+
+.stat + .stat { border-left: 1px solid rgba(0, 113, 185, .1); }
+
+.stat-icon { flex: 0 0 22px; color: var(--primary); margin-top: 2px; }
+.stat-icon svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+
+.stat-body { min-width: 0; }
+
+.stat-line {
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stat-value { font-size: 15px; font-weight: 600; color: var(--text); margin-top: 2px; white-space: nowrap; }
+
+.stat-tags { display: flex; gap: 6px; margin-top: 4px; }
+
+.stat-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-2); }
+
+.stat-tag::before { content: ''; width: 7px; height: 7px; border-radius: 2px; flex: 0 0 auto; }
+.stat-tag.easy::before { background: var(--success-text); }
+.stat-tag.busy::before { background: var(--warn-text); }
+
+/* ---------- 方案 B：带涨跌的 KPI 条 ---------- */
+.stats-delta .stat-body { min-width: 0; }
+
+.stat-delta {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 3px;
+  white-space: nowrap;
+}
+
+.stat-delta .sd-from { font-size: 13px; color: var(--text-3); }
+.stat-delta .sd-arrow { font-size: 12px; color: var(--text-4); }
+.stat-delta .sd-to { font-size: 15px; font-weight: 600; color: var(--text); }
+
+.sd-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* 改善=绿，恶化=橙，无变化=灰。方向由 better 字段决定，不看正负号 */
+.sd-chip.good { background: var(--success-bg); color: var(--success-text); border: 1px solid var(--success-border); }
+.sd-chip.bad { background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-border); }
+.sd-chip.flat { background: var(--bg-head); color: var(--text-3); border: 1px solid var(--border); }
+
+/* 工作量分布里两行（繁重 / 轻松）各带一个前缀标签 */
+.stat-delta-group {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 2px 6px;
+  margin-top: 2px;
+}
+
+.stat-delta-group .sd-key { font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
+.stat-delta-group .sd-key::before { content: ''; width: 7px; height: 7px; border-radius: 2px; }
+.stat-delta-group .sd-key.busy { color: var(--warn-text); }
+.stat-delta-group .sd-key.busy::before { background: var(--warn-text); }
+.stat-delta-group .sd-key.easy { color: var(--success-text); }
+.stat-delta-group .sd-key.easy::before { background: var(--success-text); }
+.stat-delta-group .stat-delta { margin-top: 0; }
+.stat-delta-group .sd-to { font-size: 14px; }
+
+/* =============================== 工具条 =============================== */
+.toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.toolbar .grow { flex: 1 1 auto; }
+
+.filterbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  margin-bottom: 14px;
+}
+
+.filterbar .grow { flex: 1 1 auto; }
+
+.range-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 14px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* =============================== 日历 =============================== */
+.cal {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #fff;
+}
+
+/* 首列为月份列，其后 7 列为周日～周六。
+   表头与主体各自成网格：表头固定，主体在 .cal-scroll 内滚动 */
+.cal-head,
+.cal-body { display: grid; grid-template-columns: 62px repeat(7, 1fr); }
+
+.cal-head { background: var(--bg-head); }
+
+/* 默认露出约 4 周高度，其余 9 周靠滚动查看（最大 13 周）。
+   预留滚动条宽度，避免表头与主体列宽错位 */
+.cal-scroll {
+  max-height: 344px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+
+/* 对比视图每格三行，行更高，相应放宽以仍能露出约 4 周 */
+.cal.compare .cal-scroll { max-height: 420px; }
+
+.cal-head > div {
+  padding: 9px 12px;
+  font-size: 14px;
+  color: var(--text);
+  border-right: 1px solid var(--border);
+}
+
+.cal-head > div:last-child { border-right: 0; }
+
+/* ---- 左侧月份列：一个月合并成一格，纵向跨满该月所有周 ---- */
+.cal-month {
+  grid-column: 1;
+  border-right: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  background: #f7f9fc;
+  position: relative;
+}
+
+.cal-head .cal-month {
+  border-top: 0;
+  background: var(--bg-head);
+  padding: 9px 12px;
+  grid-row: 1;
+}
+
+/* 蓝色左边条贯穿整月 */
+.cal-month.has-label::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--primary);
+}
+
+/* 标签吸顶：滚动时停在可视区顶部，滚出该月范围时由 JS 渐隐 */
+.cal-month .cm-inner {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 9px 0 10px 10px;
+  transition: opacity .12s linear;
+}
+
+.cal-month .cm-m { font-size: 13px; font-weight: 600; color: var(--primary); line-height: 1.3; }
+.cal-month .cm-y { font-size: 11px; color: var(--text-3); line-height: 1.3; }
+
+.cal-cell {
+  min-height: 84px;
+  padding: 7px 10px 10px;
+  border-top: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .15s;
+}
+
+/* 显式网格布局后 :last-child 不再等于最右列，改用类标记周六列 */
+.cal-cell.last-col { border-right: 0; }
+.cal-cell:hover { background: #fafcff; }
+
+/* 起始日之前的占位格：无内容、不可交互 */
+.cal-cell.blank { background: #fcfcfd; cursor: default; }
+.cal-cell.blank:hover { background: #fcfcfd; }
+
+.cal-cell.selected {
+  outline: 1px solid var(--primary);
+  outline-offset: -1px;
+  background: #fff;
+}
+
+.cal-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 8px;
+  min-height: 22px;
+}
+
+/* 周日 / 周六 的日期数字置灰 */
+.cal-day { color: var(--text); }
+.cal-day.dim { color: var(--text-3); }
+
+.cal-date .badge-holiday {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px; height: 16px;
+  padding: 0 3px;
+  border-radius: 2px;
+  background: var(--warn-text);
+  color: #fff;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.cal-date .badge-today {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px; height: 18px;
+  border: 1px solid var(--primary-border);
+  border-radius: 2px;
+  background: var(--primary-bg);
+  color: var(--primary);
+  font-size: 11px;
+}
+
+/* 数值前带状态圆点，颜色跟随文字 */
+.cal-val {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.cal-val .cv-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+
+.cal-val.zero { color: var(--text-3); }
+
+/* 已分配至其他日期：虚线灰框，与对比视图的 .cmp-row.none 同一视觉语言。
+   跟在「0台 0小时」下方，故加上间距 */
+.cal-val.none {
+  display: flex;
+  padding: 4px 8px;
+  margin: 5px -2px 0;
+  border-radius: var(--radius-lg);
+  background: var(--bg-head);
+  border: 1px dashed var(--border-2);
+  color: var(--text-3);
+  font-size: 11px;
+}
+
+.cal-val.none .cv-dot { display: none; }
+
+.cal-val.heavy,
+.cal-val.easy {
+  display: flex;
+  padding: 4px 8px;
+  margin: 0 -2px;
+  border-radius: var(--radius-lg);
+}
+
+.cal-val.heavy { background: var(--warn-bg); color: var(--warn-text); }
+
+/* 轻松绿：主页与方案抽屉的日历都用（calHtml 传 greenEasy）。0 台的日期不算轻松，保持灰字 */
+.cal-val.easy { background: var(--success-bg); color: var(--success-text); }
+
+/* ----------------------------- 对比日历 ----------------------------- */
+.cal.compare .cal-cell {
+  min-height: 76px;
+  padding-bottom: 8px;
+  cursor: default;
+  position: relative;               /* 承载右上角「已调整」红点 */
+}
+
+.cal.compare .cal-cell:hover { background: #fff; }
+.cal.compare .cal-date { font-weight: 600; margin-bottom: 6px; }
+
+/* 被调整日：右上角圆点。红=算法调整，紫=人工调整 */
+.cal.compare .cal-cell.adjusted::after {
+  content: '';
+  position: absolute;
+  top: 9px; right: 9px;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.cal.compare .cal-cell.adjusted.manual::after { background: var(--manual); }
+
+/* 人工调整日：整格加紫色左边条，扫一眼就能挑出来。
+   对比视图与手动调整/最终方案页（.marked）共用同一套标记，显示方式必须一致 */
+.cal.compare .cal-cell.manual,
+.cal.marked .cal-cell.manual {
+  background: #fdfaff;
+  box-shadow: inset 3px 0 0 var(--manual);
+}
+
+/* .marked = 显示调整标记。position: relative 是必须的 ——
+   「调整」角标是绝对定位，少了定位上下文会一路逃到页面级的定位祖先上
+   （实测跑到了标题栏右上角）。只读的最终方案页也需要，所以挂在 marked 上。 */
+.cal.marked .cal-cell { position: relative; }
+
+/* 可点态。两者都要：
+     .adjustable —— 手动调整页，点格子就地改这一天
+     .enterable  —— 首页，点格子进入手动调整页
+   最终预览页两者都不带，所以没有手型与悬浮高亮，一眼能看出是只读的。 */
+.cal.adjustable .cal-cell:not(.blank),
+.cal.enterable .cal-cell:not(.blank) { cursor: pointer; }
+
+.cal.adjustable .cal-cell:not(.blank):hover,
+.cal.enterable .cal-cell:not(.blank):hover {
+  background: var(--primary-bg);
+  outline: 1px solid var(--primary);
+  outline-offset: -1px;
+  z-index: 1;
+}
+
+/* 悬浮优先级要高于紫色底，否则已调整的格子 hover 时没有反馈 */
+.cal.adjustable .cal-cell.manual:hover,
+.cal.enterable .cal-cell.manual:hover { background: var(--primary-bg); }
+
+/* 首页格子里的去向说明。与对比视图的 .cmp-moved 同一视觉语言（紫色小字），
+   只是首页格子没有三行结构，上边距给小一点 */
+.cal-moved {
+  display: block;
+  margin: 3px 0 0 1px;
+  font-size: 11px;
+  color: var(--manual);
+}
+
+/* 日期旁的来源角标 */
+.src-badge {
+  position: absolute;
+  top: 7px; right: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.src-badge.manual {
+  background: var(--manual-bg);
+  border: 1px solid var(--manual-border);
+  color: var(--manual);
+}
+
+.cmp-row {
+  display: block;
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 3px;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 当前计划：统一黑字、无底色，作为对比基线不参与语义配色 */
+.cmp-row.orig { color: var(--text); }
+
+/* 算法方案：只在被人工覆盖的日子出现，弱化成灰色删除线 ——
+   表示「算法原本的建议，已被覆盖」 */
+.cmp-row.algo {
+  color: var(--text-4);
+  text-decoration: line-through;
+  text-decoration-color: var(--text-4);
+}
+
+/* 现方案：填充色块，为主视觉。繁重=橙，轻松=绿（与 KPI 图例同色） */
+.cmp-row.now { border: 1px solid transparent; }
+
+.cmp-row.now.busy {
+  background: var(--warn-bg);
+  border-color: var(--warn-border);
+  color: var(--warn-text);
+}
+
+.cmp-row.now.easy {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-text);
+}
+
+/* 新方案色块只表负载（繁重橙 / 轻松绿 / 无安排灰虚线），不承担「谁改的」这层信息 ——
+   人工调整改用格子级标记表达（紫左边条 + 调整角标 + 下面这行紫字），
+   两个维度分开，色块颜色才始终等于「这天忙不忙」，扫一眼日历就能读。 */
+
+/* 新方案下方的去向说明：自哪天移入多少台 / 已调整至某日 / 已分配至其他日期 */
+.cmp-moved {
+  display: block;
+  margin: 3px 0 0 7px;
+  font-size: 11px;
+  color: var(--manual);
+}
+
+/* 算法清空的日期用中性灰 —— 紫色是人工调整的专用色，不能混用 */
+.cmp-moved.plain { color: var(--text-3); }
+
+/* 手动调整入口（方案 B）：与图例同排。实心紫填充 ——
+   紫色是全局「人工调整」的语义色（紫格子、紫图例、紫角标），入口沿用同一色最省解释；
+   实心比描边显眼，不会被旁边一排图例文字盖过去 */
+.btn.btn-manual {
+  gap: 5px;
+  margin-left: 14px;
+  border-color: var(--manual);
+  background: var(--manual);
+  color: #fff;
+  font-weight: 500;
+}
+
+.btn.btn-manual:hover {
+  border-color: var(--manual-strong);
+  background: var(--manual-strong);
+  color: #fff;
+}
+
+.btn.btn-manual .bm-ico { display: flex; }
+.btn.btn-manual .bm-ico svg { stroke: currentColor; fill: none; }
+
+/* 单日撤销：做成「调整」角标里的 ✕，不单独占一行。
+   被改过的格子本来已有三行内容，再加一行按钮会让日历高度参差不齐 */
+.badge-undo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  margin-right: -2px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: inherit;
+  font-size: 9px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.badge-undo:hover { background: var(--manual); color: #fff; }
+
+/* 撤销调整：与手动调整共用图例那排的同一个槽位。
+   破坏性操作用描边紫而非实心紫 —— 和实心的「手动调整」入口区分开，不抢主动作的位置 */
+.btn.btn-undo {
+  border-color: var(--manual-border);
+  background: #fff;
+  color: var(--manual);
+}
+
+/* 方案 B 里它在图例那排，需要和一长串图例文字拉开距离。
+   方案 C 里它在页脚（叫「取消调整」），靠页脚自己的 gap 就够，不要这个边距 */
+.toolbar .btn.btn-undo { margin-left: 14px; }
+
+.btn.btn-undo:hover {
+  background: var(--manual-bg);
+  border-color: var(--manual);
+  color: var(--manual);
+}
+
+/* 无保养安排：虚线灰框。用于「原方案有、现方案清空」或反向新增的日期，
+   与「轻松」区分开 —— 没有任务不等于负载轻 */
+/* 无安排 / 已改期：虚线灰框。字号略小，保证「现方案 已分配至其他日期」能单行显示 */
+.cmp-row.none {
+  background: var(--bg-head);
+  border: 1px dashed var(--border-2);
+  color: var(--text-3);
+  font-size: 11px;
+}
+
+/* 图例。方案 B 里它被放进 toolbar 与周期选择器同排，故不再自带下边距 */
+.cmp-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.toolbar .cmp-legend { margin-bottom: 0; }
+
+.cmp-legend .lg { display: inline-flex; align-items: center; gap: 6px; }
+
+.cmp-legend .sq { width: 8px; height: 8px; border-radius: 2px; flex: 0 0 auto; }
+.cmp-legend .sq.busy { background: var(--warn-text); }
+.cmp-legend .sq.easy { background: var(--success-text); }
+
+.cmp-legend .sq.none {
+  background: var(--bg-head);
+  border: 1px dashed var(--border-2);
+}
+
+.cmp-legend .sq.manual { background: var(--manual); }
+
+.cmp-legend .rd {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--danger);
+  flex: 0 0 auto;
+}
+
+/* 迷你日历（编排调整） */
+.mini-cal { user-select: none; }
+
+.mini-head, .mini-row { display: grid; grid-template-columns: repeat(7, 1fr); }
+
+.mini-head > div {
+  text-align: center;
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.mini-cell {
+  height: 46px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.mini-cell:hover { background: var(--bg-hover); }
+.mini-cell.dim { color: var(--text-4); }
+
+.mini-cell.selected { background: var(--primary); color: #fff; }
+.mini-cell.selected .mc-load { color: #fff; }
+.mini-cell.selected .dot { background: #fff !important; }
+
+.mini-cell .mc-day { line-height: 1.2; }
+
+.mini-cell .mc-load {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--text-3);
+  line-height: 1.2;
+}
+
+.mini-cell .dot { width: 5px; height: 5px; border-radius: 50%; flex: 0 0 auto; }
+.mini-cell .dot.red { background: var(--danger); }
+.mini-cell .dot.green { background: var(--success-text); }
+
+.mini-legend {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  padding-top: 10px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.mini-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.mini-legend i { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+
+/* =============================== 表格 =============================== */
+.table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14px; }
+
+.table thead th {
+  background: var(--bg-head);
+  padding: 11px 12px;
+  text-align: left;
+  font-weight: 500;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.table tbody td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.table tbody tr:hover > td { background: #fafcff; }
+
+.table .col-narrow { width: 40px; }
+.table .col-actions { width: 88px; white-space: nowrap; }
+.table .col-nowrap { white-space: nowrap; }
+.table .ellip { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.expander {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px; height: 17px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.expander:hover { color: var(--primary); border-color: var(--primary); }
+
+.nested-wrap { background: #fcfcfd; padding: 0; }
+
+.table-nested { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+
+.table-nested thead th {
+  background: #f6f7f9;
+  padding: 9px 12px;
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.table-nested tbody td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.th-help { display: inline-flex; align-items: center; gap: 4px; }
+
+/* 列表条数统计 */
+.list-summary {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
+
+/* 类型标签：两类语义相反，用色区分 —— 不保养=灰，加班保养=蓝 */
+.tag-leave {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.tag-leave.workday {
+  background: var(--bg-head);
+  border: 1px solid var(--border-2);
+  color: var(--text-2);
+}
+
+.tag-leave.restday {
+  background: var(--primary-bg);
+  border: 1px solid var(--primary-border);
+  color: var(--primary);
+}
+
+.btn-link.danger { color: var(--danger); }
+.btn-link.danger:hover { color: #ff7875; }
+
+/* 空态 */
+.empty { padding: 56px 0; text-align: center; color: var(--text-3); }
+.empty svg { margin: 0 auto 8px; }
+.empty-text { font-size: 14px; color: var(--text-3); }
+
+/* 表格下方横向滚动条占位（贴近现网） */
+.table-scrollbar {
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 4px;
+  background: #f0f0f0;
+  position: relative;
+}
+
+.table-scrollbar::after {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 42%;
+  border-radius: 4px;
+  background: #d0d3d9;
+}
+
+/* =============================== 抽屉 =============================== */
+.mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .45);
+  z-index: 100;
+  animation: fade .2s;
+}
+
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+.drawer {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: calc(100% - 286px);
+  background: #fff;
+  z-index: 110;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -6px 0 16px rgba(0, 0, 0, .08);
+  animation: slideIn .24s cubic-bezier(.22, 1, .36, 1);
+}
+
+@keyframes slideIn { from { transform: translateX(40px); opacity: .6; } to { transform: none; opacity: 1; } }
+
+.drawer.level-2 { width: calc(100% - 286px); z-index: 130; }
+
+.drawer-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.drawer-head .grow { flex: 1 1 auto; }
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px; height: 26px;
+  border-radius: var(--radius);
+  color: var(--text-3);
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.icon-btn:hover { background: var(--bg-hover); color: var(--text); }
+.icon-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+
+.drawer-body { flex: 1 1 auto; overflow: auto; padding: 16px 20px 24px; }
+
+/* 方案 B：决策动作固定在抽屉底部 —— 先看完内容再做决定，
+   而不是把「对比」和「应用」并列摆在内容上方 */
+.drawer-foot {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  /* 左侧留白给固定在屏幕左下角的原型浮钮，避免压住页脚左对齐的提示文字。
+     抽屉固定 left:286px；浮钮现在是三个（界面导航 / 方案B / 方案C），
+     右边缘约 474px → 相对抽屉 188px，留 200px 刚好有 12px 余量。
+     注意：这个值跟着浮钮个数走，再加按钮就得重新量。 */
+  padding: 12px 20px 12px 200px;
+  border-top: 1px solid var(--border);
+  background: #fff;
+}
+
+.drawer-foot .grow { flex: 1 1 auto; }
+
+.drawer-foot .foot-hint {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-right: 4px;
+}
+
+/* 已手动调整的标记 */
+.tag-tuned {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  color: var(--warn-text);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* =============================== 弹窗 =============================== */
+.modal-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 56px 16px 32px;
+  overflow: auto;
+}
+
+.modal {
+  background: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+  width: 520px;
+  max-width: 100%;
+  animation: zoomIn .2s cubic-bezier(.08, .82, .17, 1);
+}
+
+@keyframes zoomIn { from { transform: scale(.94); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.modal.modal-lg { width: 1000px; }
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.modal-head .grow { flex: 1 1 auto; }
+
+.modal-body { padding: 20px; }
+
+.modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px 16px;
+}
+
+.modal-foot.center { justify-content: center; }
+
+/* --------------------------- 步骤流程指引 --------------------------- */
+.steps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: #fafcff;
+}
+
+.step { display: flex; align-items: center; gap: 9px; flex: 0 0 auto; }
+
+.step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  font-size: 12px;
+  flex: 0 0 auto;
+  border: 1px solid var(--border-2);
+  background: #fff;
+  color: var(--text-3);
+}
+
+.step-text { display: flex; flex-direction: column; line-height: 1.35; min-width: 0; }
+.step-title { font-size: 13px; color: var(--text-3); white-space: nowrap; }
+.step-desc { font-size: 11px; color: var(--text-4); white-space: nowrap; }
+
+/* 已完成：实心蓝底打勾 */
+.step.done .step-num { background: var(--primary); border-color: var(--primary); color: #fff; }
+.step.done .step-title { color: var(--text-2); }
+
+/* 当前步：蓝描边 + 加粗，是视觉焦点 */
+.step.current .step-num {
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(22, 119, 255, .1);
+}
+.step.current .step-title { color: var(--text); font-weight: 600; }
+.step.current .step-desc { color: var(--text-3); }
+
+/* 连接线，自动占满剩余宽度 */
+.step-line {
+  flex: 1 1 auto;
+  min-width: 24px;
+  height: 1px;
+  background: var(--border-2);
+}
+
+@media (max-width: 1100px) {
+  .step-desc { display: none; }
+}
+
+/* --------------------- 结果类弹窗（成功 / 失败提示） --------------------- */
+/* 结果类弹窗无标题栏，关闭按钮浮在右上角 */
+.modal.modal-confirm { width: 476px; position: relative; }
+
+/* 方案 C 的应用确认里是一张工单级五列表（项目 / 工单编号 / 设备编号 /
+   客户自编号 / 调整日期）。弹窗左侧警告图标吃掉约 100px，表格实际需要 602px，
+   再加上千行带来的纵向滚动条，720px 时可用宽度只有 580px 会横向溢出。
+   给到 780px —— 宁可弹窗宽些，也不要把 20 位的工单编号截断。 */
+.modal.modal-confirm.modal-confirm-wide { width: 780px; }
+
+/* 首次使用引导：窄弹窗、无关闭按钮，必须二选一 */
+.modal.modal-guide { width: 386px; }
+.modal.modal-guide .modal-body { padding: 20px 20px 4px; }
+.modal.modal-guide .modal-foot { padding: 8px 20px 16px; }
+
+/* 引导图标是实心填充图形，须清掉描边基类，否则子元素继承 stroke 会盖住白色「i」 */
+.confirm-icon.info { color: var(--primary); }
+.confirm-icon.info svg { stroke: none; width: 20px; height: 20px; }
+.confirm-title.sm { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+
+.confirm-close { position: absolute; top: 12px; right: 12px; }
+
+.confirm-body { display: flex; gap: 16px; padding: 4px 20px 0 4px; }
+
+.confirm-icon { flex: 0 0 22px; margin-top: 1px; }
+.confirm-icon svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+.confirm-icon.error { color: var(--danger); }
+.confirm-icon.warn { color: var(--warn-text); }
+
+/* ---------- 应用前确认：影响摘要 ---------- */
+.apply-sum {
+  margin-top: 12px;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-head);
+}
+
+.apply-sum .as-head { font-size: 13px; color: var(--text); margin-bottom: 7px; }
+.apply-sum .as-head b { font-size: 15px; }
+
+.apply-sum .as-list { margin: 0; padding: 0; list-style: none; }
+
+.apply-sum .as-list li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.9;
+}
+
+.apply-sum .as-dot { width: 7px; height: 7px; border-radius: 2px; flex: 0 0 auto; }
+.apply-sum .as-dot.none { background: var(--border-2); }
+.apply-sum .as-dot.add { background: var(--success-text); }
+.apply-sum .as-dot.chg { background: var(--primary); }
+.apply-sum .as-dot.manual { background: var(--manual); }
+
+.apply-sum .as-foot {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-2);
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.9;
+}
+
+
+
+/* 调整明细表。条数多时内部滚动，不把弹窗撑长 */
+.apply-sum .as-table-wrap {
+  margin-top: 6px;
+  /* 工单级明细可达上千行，靠这里自身滚动承载 */
+  max-height: 320px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+/* 外层是项目分组表，两列：项目名（带展开开关）/ 工单数。
+   注意 .col-nowrap 只定义在 .table 下，.table-nested 用不到，所以每列单独写死。 */
+.apply-sum .as-table { font-size: 12px; }
+
+.apply-sum .as-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 7px 10px;
+  font-weight: 500;
+}
+
+.apply-sum .as-table tbody td { padding: 6px 10px; }
+
+.apply-sum .as-table .pg-name { width: auto; }
+
+.apply-sum .as-table .pg-count {
+  width: 96px;
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* 手动调整角标，只用在展开后明细的「调整方式」列。
+   紫色沿用全局「人工调整」语义色（紫格子、紫边条、紫角标）；
+   只做标注，不参与排序或分组 —— 分组维度始终是项目。 */
+.tag-manual {
+  display: inline-flex;
+  align-items: center;
+  height: 17px;
+  margin-left: 6px;
+  padding: 0 6px;
+  border: 1px solid var(--manual-border);
+  border-radius: 3px;
+  background: var(--manual-bg);
+  color: var(--manual);
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+
+
+/* 项目名做成展开开关 */
+.apply-sum .pg-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.apply-sum .pg-toggle:hover .pg-text { text-decoration: underline; }
+
+.apply-sum .pg-toggle .pg-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.apply-sum .pg-toggle .pg-ico { display: flex; flex: 0 0 auto; color: var(--text-3); }
+
+.apply-sum .pg-toggle .pg-ico svg {
+  width: 11px;
+  height: 11px;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  fill: none;
+  transition: transform .15s ease;
+}
+
+.apply-sum .pg-toggle.on .pg-ico svg { transform: rotate(90deg); }
+
+/* 展开后的工单明细：整行通栏，内部独立滚动，不让单个项目的上百行顶穿弹窗 */
+.apply-sum .pg-detail > td { padding: 0 !important; background: var(--bg-head); }
+
+.apply-sum .pg-wrap {
+  max-height: 184px;
+  overflow-y: auto;
+  padding: 0 10px 8px 24px;   /* 左侧多缩进，表达「属于上面那个项目」 */
+}
+
+.apply-sum .oc-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 11px;
+}
+
+.apply-sum .oc-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 6px 8px 5px;
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-3);
+  background: var(--bg-head);
+  white-space: nowrap;
+}
+
+.apply-sum .oc-table td {
+  padding: 4px 8px;
+  color: var(--text-2);
+  border-top: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.apply-sum .oc-table .oc-no { width: 172px; font-variant-numeric: tabular-nums; }
+.apply-sum .oc-table .oc-dev { width: 78px; font-variant-numeric: tabular-nums; }
+.apply-sum .oc-table .oc-alias { width: 86px; }
+.apply-sum .oc-table .oc-date { width: 134px; font-variant-numeric: tabular-nums; }
+.apply-sum .oc-table .oc-way { width: 86px; }
+.apply-sum .oc-table .oc-arrow { color: var(--text-4); margin: 0 5px; }
+
+/* 算法排的那些写「智能编排」但压成弱灰 —— 需要被看见的是手动那几行，
+   整列铺满同样深度的文字反而把紫色角标淹没了 */
+.apply-sum .oc-table .oc-auto { color: var(--text-4); }
+
+/* 手动调整的整行加极浅紫底，扫一眼就能在上百行里定位 */
+.apply-sum .oc-table tr.oc-is-manual td { background: var(--manual-bg); }
+
+
+
+
+
+.confirm-warnline {
+  margin-top: 11px;
+  font-size: 12px;
+  color: var(--warn-text);
+}
+
+/* 可调整的日历：整格即交互区，悬浮时整格变蓝底蓝框，点击直接进入调整。
+   不放「调整」按钮 —— 整格可点时，额外按钮既多余又缩小了命中区域。 */
+.cal.compare.tunable .cal-cell:not(.blank) { cursor: pointer; }
+
+.cal.compare.tunable .cal-cell:not(.blank):hover {
+  background: var(--primary-bg);
+  outline: 1px solid var(--primary);
+  outline-offset: -1px;
+  z-index: 1;
+}
+
+/* 底部提示的警示态 */
+.drawer-foot .foot-hint.warn { color: var(--warn-text); }
+
+.confirm-main { flex: 1 1 auto; min-width: 0; }
+
+.confirm-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.confirm-text { font-size: 14px; color: var(--text-2); line-height: 1.6; }
+
+/* 失败原因：左侧红条强调，便于一眼定位 */
+.confirm-reason {
+  margin-top: 10px;
+  padding: 9px 12px;
+  border-radius: var(--radius-lg);
+  background: #fff2f0;
+  border: 1px solid #ffccc7;
+  border-left: 3px solid var(--danger);
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+/* 失败依据：紧跟原因下方的一句灰字 */
+.confirm-detail {
+  margin-top: 9px;
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.7;
+}
+
+/* 建议：蓝底一行，与红色失败原因形成「问题 → 出路」的层次 */
+.confirm-guide {
+  margin-top: 12px;
+  padding: 9px 12px;
+  border-radius: var(--radius-lg);
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+.confirm-guide .gk {
+  color: var(--primary);
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+/* 上下文单行排布，便于用户截图给运维 */
+.confirm-meta {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.7;
+}
+
+.confirm-meta .code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+}
+
+/* 禁用态按钮：承载「此操作当前无意义」的信息，不是单纯灰掉 */
+.btn:disabled,
+.btn.is-disabled {
+  color: var(--text-4);
+  background: var(--bg-head);
+  border-color: var(--border-2);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn:disabled:hover,
+.btn.is-disabled:hover { color: var(--text-4); border-color: var(--border-2); }
+
+/* 表单行（人员安排设置） */
+.form-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.form-row > .field-label { width: 78px; text-align: right; flex: 0 0 78px; }
+.form-row .form-ctl { flex: 1 1 auto; display: flex; gap: 8px; }
+.form-row .form-ctl .control { flex: 1 1 auto; }
+.form-row .form-ctl .control.fixed { flex: 0 0 96px; }
+.form-row .radio-group { display: flex; gap: 20px; }
+
+/* =============================== 编排调整弹窗内部 =============================== */
+.adjust-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+
+.adjust-left { border-right: 1px solid var(--border); padding: 16px 16px 16px 20px; min-width: 0; }
+.adjust-right { padding: 16px 20px 16px 16px; min-width: 0; }
+
+.adjust-proj-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.adjust-proj-row .control { flex: 1 1 auto; min-width: 0; }
+.adjust-proj-row .sum { font-size: 13px; color: var(--text-2); white-space: nowrap; }
+
+.order-list { max-height: 360px; overflow-y: auto; padding-right: 4px; }
+
+.order-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 10px;
+  background: #fff;
+}
+
+.order-card:hover { border-color: var(--primary-border); }
+
+/* 被勾中的工单（手动调整时真正会被搬走的那几张）。
+   只做浅蓝底 + 蓝边，强度压在复选框之下 —— 勾选框才是状态的主体，
+   卡片底色是用来扫一眼就看清「选了哪几张」的 */
+.order-card.picked { border-color: var(--primary); background: var(--primary-bg); }
+
+.order-thumb {
+  flex: 0 0 30px;
+  height: 30px;
+  border-radius: var(--radius-lg);
+  background: var(--primary-bg);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.order-thumb svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+
+.order-info { flex: 1 1 auto; min-width: 0; font-size: 13px; line-height: 1.85; color: var(--text); }
+.order-info .muted { color: var(--text-2); }
+
+.adjust-meta { font-size: 13px; color: var(--text-2); margin: 10px 0 14px; }
+
+.adjust-radio-block { margin-bottom: 8px; }
+
+.adjust-radio-block .sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 24px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.adjust-radio-block .sub .control { height: 28px; width: 56px; padding: 0 8px; }
+
+.mini-toolbar { display: flex; gap: 8px; justify-content: flex-end; margin: 12px 0 4px; }
+
+.adjust-cal-panel { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 10px 12px 12px; }
+
+/* =============================== 通知浮窗 =============================== */
+/* 渐变蓝底：从 KONE 品牌蓝扫到体系主色蓝。
+   「生成中」与「已生成」共用同一张卡，只换内容不换外观，
+   所以配色统一写在 .notify 上，内部文字与控件一并转成白色系。 */
+.notify {
+  position: fixed;
+  right: 20px; bottom: 24px;
+  width: 356px;
+  background: linear-gradient(135deg, var(--kone-blue) 0%, var(--primary) 100%);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 6px 20px rgba(0, 113, 185, .32);
+  padding: 14px 16px;
+  color: #fff;
+  z-index: 150;
+  animation: notifyIn .3s cubic-bezier(.22, 1, .36, 1);
+}
+
+@keyframes notifyIn { from { transform: translateX(28px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.notify-head { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+.notify-head .ni { color: #fff; flex: 0 0 auto; }
+.notify-head .ni svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.notify-head .grow { flex: 1 1 auto; }
+
+/* 关闭 ✕：蓝底上压暗一档，hover 才全白 */
+.notify-head .ax { cursor: pointer; color: rgba(255, 255, 255, .7); }
+.notify-head .ax:hover { color: #fff; }
+
+.notify-text { font-size: 12px; color: rgba(255, 255, 255, .85); line-height: 1.7; margin-bottom: 10px; }
+
+.progress { display: flex; align-items: center; gap: 8px; }
+
+.progress-track {
+  flex: 1 1 auto;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, .28);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: #fff;
+  transition: width .4s ease;
+}
+
+.progress-pct { font-size: 12px; color: #fff; flex: 0 0 auto; min-width: 30px; text-align: right; }
+
+/* 「已生成」状态的两个按钮：蓝底上要反色，
+   否则默认的白底蓝字主按钮会和卡片糊在一起 */
+.notify-acts { display: flex; justify-content: flex-end; gap: 8px; }
+
+.notify-acts .btn {
+  border-color: rgba(255, 255, 255, .45);
+  background: transparent;
+  color: #fff;
+}
+
+.notify-acts .btn:hover {
+  border-color: #fff;
+  background: rgba(255, 255, 255, .14);
+  color: #fff;
+}
+
+.notify-acts .btn.btn-primary {
+  border-color: #fff;
+  background: #fff;
+  color: var(--kone-blue);
+  font-weight: 500;
+}
+
+.notify-acts .btn.btn-primary:hover {
+  border-color: #fff;
+  background: rgba(255, 255, 255, .88);
+  color: var(--kone-blue);
+}
+
+/* toast 轻提示 */
+.toast-layer {
+  position: fixed;
+  top: 14px; left: 0; right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 200;
+  pointer-events: none;
+}
+
+.toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  background: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  font-size: 14px;
+  animation: fade .2s;
+}
+
+.toast .tc { color: var(--success-text); display: flex; }
+.toast .tc svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+/* =============================== 原型导航 =============================== */
+/* 停靠在内容区左下角，避免压住侧栏底部的收起按钮 */
+.proto {
+  position: fixed;
+  left: calc(var(--sider-w) + 12px);
+  bottom: 12px;
+  z-index: 300;
+  font-size: 12px;
+  transition: left .2s;
+}
+
+.app.collapsed ~ .proto { left: calc(var(--sider-w-collapsed) + 12px); }
+
+.proto-bar { display: flex; gap: 8px; align-items: center; }
+
+.proto-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 15px;
+  background: #1c2a48;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: var(--shadow-2);
+  user-select: none;
+  white-space: nowrap;
+}
+
+/* 方案 B 开关：未启用时压暗，启用后高亮为主色 */
+.proto-toggle.mode { background: #46536b; }
+.proto-toggle.mode.on { background: var(--primary); }
+
+.proto-toggle svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+.proto-panel {
+  position: absolute;
+  left: 0; bottom: 38px;
+  width: 232px;
+  background: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+  overflow: hidden;
+}
+
+.proto-panel-title {
+  padding: 9px 12px;
+  background: var(--bg-head);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.proto-list { padding: 4px; max-height: 320px; overflow: auto; }
+
+.proto-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 9px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--text);
+}
+
+.proto-item:hover { background: var(--bg-hover); }
+.proto-item.on { background: var(--primary-bg); color: var(--primary); font-weight: 500; }
+.proto-item .shot { margin-left: auto; color: var(--text-4); font-size: 11px; }
+.proto-item.on .shot { color: var(--primary); }
+
+/* =============================== 响应式兜底 =============================== */
+@media (max-width: 1280px) {
+  .stats { grid-template-columns: repeat(2, 1fr); row-gap: 14px; }
+  .stat:nth-child(3) { border-left: 0; }
+}
+
+@media (max-width: 1100px) {
+  .drawer, .drawer.level-2 { width: calc(100% - 40px); }
+  .adjust-grid { grid-template-columns: 1fr; }
+  .adjust-left { border-right: 0; border-bottom: 1px solid var(--border); padding: 16px; }
+  .adjust-right { padding: 16px; }
+}
+
+/* --------------------- 脚本未运行时的兜底提示 ---------------------
+   正常情况下 goScreen() 会把 #viewMount 整个替换掉，这段看不到。
+   只有脚本被拦截 / 引擎过旧时才会留在页面上。 */
+.boot-fallback {
+  max-width: 560px;
+  margin: 64px auto;
+  padding: 24px 28px;
+  border: 1px solid var(--warn-border);
+  border-radius: var(--radius-lg);
+  background: var(--warn-bg);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.9;
+}
+
+.boot-fallback .bf-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--warn-text);
+}
+
+.boot-fallback p { margin: 0; }
+
+/* ===================== 方案 C 专属样式 =====================
+   全部挂在 body.plan-c 下，切出 C 就自动失效 ——
+   方案 A / B 的外观必须一个像素都不动。 */
+
+/* 无保养安排改用实心灰，与繁重橙、轻松绿并列成三种一眼可辨的状态。
+   A / B 里它是近白底 + 虚线框，缩到 8px 后看不出颜色，像个空方块 */
+body.plan-c .cmp-legend .sq.none {
+  background: var(--none-mark);
+  border: 0;
+}
+
+/* 日历里的无保养色块压深一档，否则贴在白卡片上看不出是个色块。
+   底色加深后文字也要跟着加重，不然 11px 灰字在灰底上对比度不够 */
+body.plan-c .cmp-row.none,
+body.plan-c .cal-val.none {
+  background: var(--none-bg);
+  color: var(--text-2);
+}

@@ -1,0 +1,347 @@
+/* =========================================================================
+   智能编排 原型 · 基础层：设计令牌 / 重置 / 应用骨架
+   ========================================================================= */
+
+:root {
+  /* 品牌 */
+  --kone-blue: #0071b9;
+
+  /* 主色（Ant Design Vue 体系） */
+  --primary: #1677ff;
+  --primary-hover: #4096ff;
+  --primary-active: #0958d9;
+  --primary-bg: #e6f4ff;
+  --primary-border: #91caff;
+
+  /* 侧栏 */
+  --sider-bg: #1c2a48;
+  --sider-sub-bg: #16223b;
+  --sider-text: rgba(255, 255, 255, .78);
+  --sider-text-strong: #fff;
+  --sider-active: #1890ff;
+  --sider-w: 208px;
+  --sider-w-collapsed: 56px;
+
+  /* 文本 */
+  --text: rgba(0, 0, 0, .88);
+  --text-2: rgba(0, 0, 0, .65);
+  --text-3: rgba(0, 0, 0, .45);
+  --text-4: rgba(0, 0, 0, .25);
+
+  /* 线与面 */
+  --border: #f0f0f0;
+  --border-2: #d9d9d9;
+  --bg-page: #f0f2f5;
+  --bg-card: #fff;
+  --bg-head: #fafafa;
+  --bg-hover: #fafafa;
+
+  /* 人工调整：与算法生成区分开，刻意选一个不在原有语义色里的紫色 */
+  --manual: #722ed1;
+  --manual-strong: #531dab;   /* 实心紫按钮的 hover 态 */
+  --manual-bg: #f9f0ff;
+  --manual-border: #d3adf7;
+
+  /* 无保养安排：和繁重橙、轻松绿并列的第三种状态，统一用灰。
+     --none-mark 是图例小方块的实心灰，--none-bg 是日历色块的底色。
+     底色比原来的 #fafafa 深一档，否则压在白卡片上看不出是个色块。 */
+  --none-mark: #bfbfbf;
+  --none-bg: #f0f0f0;
+  /* 语义 */
+  --stat-bg: #eff6fd;
+  --warn-bg: #fff7e6;
+  --warn-text: #fa8c16;
+  --warn-border: #ffd591;
+  --success-bg: #f6ffed;
+  --success-text: #52c41a;
+  --success-border: #b7eb8f;
+  --danger: #ff4d4f;
+  --info-bg: #e6f4ff;
+  --info-border: #91caff;
+
+  /* 尺寸 */
+  --topbar-h: 48px;
+  --radius: 2px;
+  --radius-lg: 4px;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, .03), 0 1px 6px -1px rgba(0, 0, 0, .02);
+  --shadow-2: 0 6px 16px rgba(0, 0, 0, .08), 0 3px 6px -4px rgba(0, 0, 0, .12);
+  --shadow-3: 0 9px 28px 8px rgba(0, 0, 0, .05), 0 6px 16px rgba(0, 0, 0, .08);
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
+               'Microsoft YaHei', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5714;
+  color: var(--text);
+  background: var(--bg-page);
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, select { font-family: inherit; font-size: inherit; }
+
+svg { display: block; }
+
+/* 滚动条（贴近 Windows Chrome 的现网观感） */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #d0d3d9; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #b9bdc5; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* =========================== 应用骨架 =========================== */
+
+.app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+/* --- 顶栏 --- */
+.topbar {
+  flex: 0 0 var(--topbar-h);
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  padding-right: 16px;
+  position: relative;
+  z-index: 30;
+}
+
+/* 品牌区最小占满侧栏宽度，但允许标题继续向右延伸（与现网一致） */
+.topbar-brand {
+  min-width: var(--sider-w);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 16px;
+  padding-right: 16px;
+  flex: 0 0 auto;
+  transition: min-width .2s;
+}
+
+.app.collapsed .topbar-brand { min-width: var(--sider-w-collapsed); }
+
+.logo {
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  font-size: 15px;
+  color: var(--kone-blue);
+  flex: 0 0 auto;
+}
+
+.topbar-title {
+  font-size: 14px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app.collapsed .topbar-brand .topbar-title { display: none; }
+
+.topbar-spacer { flex: 1 1 auto; }
+
+.topbar-right { display: flex; align-items: center; gap: 4px; }
+
+.topbar-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: var(--radius);
+  color: var(--text-2);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.topbar-item:hover { background: var(--bg-hover); }
+
+.avatar {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--primary-bg);
+  color: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+}
+
+.bell { position: relative; padding: 0 6px; }
+
+.bell-badge {
+  position: absolute;
+  top: 2px; right: 0;
+  min-width: 15px; height: 15px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 10px;
+  line-height: 15px;
+  text-align: center;
+  border: 1px solid #fff;
+}
+
+/* --- 主体 --- */
+.body { flex: 1 1 auto; display: flex; min-height: 0; }
+
+/* --- 侧栏 --- */
+.sider {
+  flex: 0 0 var(--sider-w);
+  width: var(--sider-w);
+  background: var(--sider-bg);
+  display: flex;
+  flex-direction: column;
+  transition: flex-basis .2s, width .2s;
+  position: relative;
+  z-index: 20;
+}
+
+.app.collapsed .sider { flex-basis: var(--sider-w-collapsed); width: var(--sider-w-collapsed); }
+
+.sider-scroll { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; padding: 4px 0; }
+
+.sider-scroll::-webkit-scrollbar { width: 6px; }
+.sider-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .18); }
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 16px;
+  color: var(--sider-text);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.menu-item:hover { color: var(--sider-text-strong); background: rgba(255, 255, 255, .06); }
+
+.menu-item .mi-icon { flex: 0 0 16px; }
+.menu-item .mi-icon svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+
+.menu-item .mi-label { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
+
+.menu-item .mi-arrow { flex: 0 0 10px; transition: transform .2s; opacity: .7; }
+.menu-item .mi-arrow svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 2; }
+.menu-item.open .mi-arrow { transform: rotate(180deg); }
+
+.app.collapsed .menu-item { padding: 0 20px; }
+.app.collapsed .menu-item .mi-label,
+.app.collapsed .menu-item .mi-arrow { display: none; }
+
+.submenu { background: var(--sider-sub-bg); overflow: hidden; }
+.app.collapsed .submenu { display: none; }
+
+.sub-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px 0 40px;
+  color: var(--sider-text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sub-item::before {
+  content: '';
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: .7;
+  flex: 0 0 auto;
+}
+
+.sub-item:hover { color: var(--sider-text-strong); background: rgba(255, 255, 255, .06); }
+
+.sub-item.active {
+  background: var(--sider-active);
+  color: #fff;
+}
+
+.sub-item.active::before { opacity: 1; }
+
+.sider-collapse {
+  flex: 0 0 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  color: var(--sider-text);
+  cursor: pointer;
+  border-top: 1px solid rgba(255, 255, 255, .08);
+}
+
+.sider-collapse:hover { color: #fff; }
+.sider-collapse svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+.app.collapsed .sider-collapse svg { transform: rotate(180deg); }
+
+/* --- 内容区 --- */
+.main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.main-scroll { flex: 1 1 auto; overflow: auto; padding: 12px 16px 0; }
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-3);
+  margin-bottom: 12px;
+}
+
+.breadcrumb .sep { color: var(--text-4); }
+.breadcrumb .cur { color: var(--text-2); }
+
+.page {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow-1);
+}
+
+.page-title { font-size: 15px; font-weight: 500; margin: 0 0 14px; }
+
+/* 页级入口按钮行：标题下方独占一行、右对齐（与现网一致） */
+.page-actions-row {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.footer {
+  flex: 0 0 auto;
+  text-align: center;
+  padding: 10px 0 12px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* 回到顶部小圆钮（现网右下角） */
+.back-top {
+  position: absolute;
+  right: 18px; bottom: 56px;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .06);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-3);
+  cursor: pointer;
+  z-index: 5;
+}
+
+.back-top svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+
+.hidden { display: none !important; }

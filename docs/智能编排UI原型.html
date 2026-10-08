@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<!-- 本文件由 build.js 自动生成（2026-10-08 09:29:45），已内联全部样式与脚本，
+<!-- 本文件由 build.js 自动生成（2026-10-08 09:38:05），已内联全部样式与脚本，
      可直接双击打开或发送给他人，无需任何外部文件与网络。
      请勿直接编辑此文件 —— 改动请在 css/ 与 js/ 下进行，然后重新执行 node build.js -->
 <meta charset="UTF-8" />
@@ -1255,25 +1255,43 @@ svg { display: block; }
    .empty 用 visibility 而非 display:none，空位也要占住那 14px，
    否则有标记的格子会比旁边高一截，整排日期的对齐就散了。 */
 .mini-cell .mc-tag {
-  height: 14px;
-  line-height: 14px;
-  padding: 0 4px;
-  border-radius: 7px;
-  font-size: 10px;
+  height: 15px;
+  line-height: 15px;
+  padding: 0 5px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 500;
   white-space: nowrap;
   flex: 0 0 auto;
 }
 
 .mini-cell .mc-tag.empty { visibility: hidden; }
 
-/* 调整前：中性灰，是个参照点，不是用户刚做的选择 */
-.mini-cell .mc-tag.before { background: var(--bg-head); color: var(--text-3); }
+/* 两个标记的底色都用半透明，而不是写死的色值 ——
+   这些格子的底可能是白、hover 灰、或选中的蓝，
+   半透明底叠在哪一种上都立得住，不用为每种情况各写一条规则。
 
-/* 调整后：落在蓝底的选中格上，所以反白才看得清 */
-.mini-cell .mc-tag.after { background: #fff; color: var(--primary); font-weight: 600; }
+   调整前：半透明中性底。原先用的 --bg-head 是 #fafafa，叠在白格子上
+   几乎看不出有底，10px 的灰字就飘在那儿，这是「看不清」的根源。 */
+.mini-cell .mc-tag.before {
+  background: rgba(0, 0, 0, .07);
+  color: var(--text-2);
+}
 
-/* 原日期恰好也是选中格时（刚打开、还没挪），灰底在蓝底上糊成一片 */
-.mini-cell.selected .mc-tag.before { background: #fff; color: var(--primary); }
+/* 调整后：落在蓝底的选中格上，半透明白底反衬，蓝字压在上面。
+   字色取 --primary-active 而不是 --primary —— 后者在白底上实测
+   对比度只有 3.70，11px 的字按 WCAG AA 要 4.5 才够。 */
+.mini-cell .mc-tag.after {
+  background: rgba(255, 255, 255, .92);
+  color: var(--primary-active);
+  font-weight: 600;
+}
+
+/* 原日期恰好也是选中格时（刚打开、还没挪），中性底在蓝底上糊成一片 */
+.mini-cell.selected .mc-tag.before {
+  background: rgba(255, 255, 255, .92);
+  color: var(--primary-active);
+}
 
 .mini-cell:hover { background: var(--bg-hover); }
 .mini-cell.dim { color: var(--text-4); }

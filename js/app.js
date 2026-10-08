@@ -521,15 +521,29 @@
     const k = dayKey(c);
     const mvOut = movedFrom(k);
     const mvIn = movedTo(k);
-    if (mvOut) return [0, 0];                 // 整天的活被人工挪走
-    if (mvIn) {                               // 别处的活挪进来，与算法的量相加
-      const bu = c.n ? c.n[0] : 0;
-      const bh = c.n ? c.n[1] : 0;
-      return [bu + mvIn.units, Math.round((bh + mvIn.hours) * 100) / 100];
+    if (mvOut || mvIn) {
+      /* 搬出改成「减去搬移量」而不是一律归零 —— 方案 C 可以只挑走当天的一部分工单。
+         整天搬移时 mv.units 正好等于 dayLoad 的台量，减完仍是 0，
+         所以方案 A/B 的每一格与改动前完全一致。 */
+      let u = c.n ? c.n[0] : 0;
+      let h = c.n ? c.n[1] : 0;
+      if (mvOut) { u -= mvOut.units; h -= mvOut.hours; }
+      if (mvIn) { u += mvIn.units; h += mvIn.hours; }
+      return [Math.max(0, u), Math.max(0, Math.round(h * 100) / 100)];
     }
     if (c.n) return c.n;                      // 算法排的量
     if (c.o) return [0, 0];                   // 算法清空了原有安排
     return null;
+  }
+
+  /* 某天在「本次搬出」之前的量：dayLoad 读的是原始 CAL_COMPARE，本就不含搬移影响，
+     只需再补上搬入的部分。重新编辑那天时，弹窗要据此列出完整工单清单，
+     把上次挑走的那几张显示成已勾选，而不是只列剩下的。 */
+  function dayLoadBeforeOut(key) {
+    const base = dayLoad(key);
+    const mvIn = movedTo(key);
+    if (!mvIn) return base;
+    return [base[0] + mvIn.units, Math.round((base[1] + mvIn.hours) * 100) / 100];
   }
 
   /* 一次调整的规模，统一换算成「工单 / 分钟」—— 被调整的对象是保养工单，
@@ -671,18 +685,28 @@
          数字一律写出来（含 0台 0小时），去向另起一行小字，两行都短不会换行。 */
       let finalRow = '';
       let movedNote = '';
-      if (mvOut) {
-        /* 搬空的那天和算法清空的那天用同一套「无安排」外观，
-           区别由下面那行说明承担：紫字=人工挪走，灰字=算法分摊 */
-        finalRow = `<span class="cmp-row none">${CMP_LABEL.final} 0台 0小时</span>`;
-        /* 写明「手动」——同一位置上，算法清空的日子是灰字「已分配至其他日期」，
-           两者只靠颜色区分不够，文字里点出来谁动的手更保险 */
-        movedNote = `<span class="cmp-moved">${MOVED_NOTE.out} ${keyLabel(mvOut.to)}</span>`;
-      } else if (mvIn) {
+      if (mvOut || mvIn) {
+        /* 数值统一走 finalLoad，不再把搬出端写死成 0台 —— 方案 C 可以只搬走一部分。
+           搬空的那天和算法清空的那天用同一套「无安排」外观，
+           区别由下面那行说明承担：紫字=人工挪走，灰字=算法分摊。
+           还剩着量的日子按合并后的工时现算色阶，不能沿用 c.nL（那是算法的量）。 */
         const [u, h] = finalLoad(c);
-        /* 移入后工时可能跨过繁重线，必须按合并后的工时现算，不能沿用 c.nL */
-        finalRow = `<span class="cmp-row now ${loadLevel(h)}">${CMP_LABEL.final} ${u}台 ${h}小时</span>`;
-        movedNote = `<span class="cmp-moved">${MOVED_NOTE.inFrom(keyLabel(mvIn.from), mvIn.units)}</span>`;
+        finalRow = u === 0
+          ? `<span class="cmp-row none">${CMP_LABEL.final} 0台 0小时</span>`
+          : `<span class="cmp-row now ${loadLevel(h)}">${CMP_LABEL.final} ${u}台 ${h}小时</span>`;
+        /* 搬出端写明「手动」——同一位置上，算法清空的日子是灰字「已分配至其他日期」，
+           两者只靠颜色区分不够，文字里点出来谁动的手更保险。
+           只搬走一部分时改用带张数的措辞，否则格子上还剩着量、
+           说明却写「已手动调整至 X」，看着像自相矛盾。 */
+        const lines = [];
+        if (mvOut) {
+          const whole = u === 0 && !mvIn;
+          lines.push(whole
+            ? `${MOVED_NOTE.out} ${keyLabel(mvOut.to)}`
+            : MOVED_NOTE.outPart(mvOut.units, keyLabel(mvOut.to)));
+        }
+        if (mvIn) lines.push(MOVED_NOTE.inFrom(keyLabel(mvIn.from), mvIn.units));
+        movedNote = lines.map((t) => `<span class="cmp-moved">${t}</span>`).join('');
       } else if (c.n) {
         finalRow = `<span class="cmp-row now ${c.nL || 'easy'}">${CMP_LABEL.final} ${c.n[0]}台 ${c.n[1]}小时</span>`;
       } else if (cleared) {
@@ -1728,8 +1752,33 @@
      算法重新分配时无法定位到某一天，写「其他日期」—— 与日历上的措辞一致。 */
   function applyOrderRowsC() {
     const out = [];
+
+    /* ① 人工搬移：逐条列出实际挑中的那几张工单。
+
+       这里按 manualMoves 走而不是扫日历，解决两个问题：
+       一是只搬走一部分时，按台量差现生成会列出一串连号工单，和弹窗里挑的对不上；
+       二是扫日历会把同一次搬移算两遍（搬出端一遍、搬入端又一遍），
+       而且两遍的工单编号还不一样（编号含日期戳）—— 同一张工单成了两张。 */
+    manualMoves.forEach((m) => {
+      const p = projectForDay(m.from);
+      /* 兼容整天搬移的记录（A/B 不记 orders）：按量退回生成 */
+      const list = (m.orders && m.orders.length)
+        ? m.orders
+        : ordersForDay(m.from, m.units, Math.round(m.hours * 60));
+      list.forEach((o) => out.push({
+        project: p.name, code: p.code,
+        no: o.no, device: o.device, alias: o.alias,
+        from: keyLabel(m.from), to: keyLabel(m.to), manual: true,
+      }));
+    });
+
+    /* ② 算法改动：口径是「当前计划 → 新方案」两端直接比。
+       人工动过的日子跳过 —— 它们已经由 ① 逐条列清，
+       留在这里只会把人工搬移的量混进算法行里再数一遍。 */
     CAL_COMPARE.flat().forEach((c) => {
       if (c.blank) return;
+      const k = dayKey(c);
+      if (movedFrom(k) || movedTo(k)) return;
       const fin = finalLoad(c);
       if (!c.o && !fin) return;                  // 两套方案都没安排
       const bu = c.o ? c.o[0] : 0;
@@ -1739,29 +1788,20 @@
       const delta = fu - bu;
       if (!delta) return;                        // 工单数没变，不算日期调整
 
-      const k = dayKey(c);
-      const mvOut = movedFrom(k);
-      const mvIn = movedTo(k);
       const p = projectForDay(k);
       const n = Math.abs(delta);
       const mins = Math.abs(Math.round((fh - bh) * 60));
       /* 工单由 ordersForDay 生成，与编排调整弹窗里的卡片同源同序 */
       const orders = ordersForDay(k, n, mins);
 
-      const from = delta < 0
-        ? keyLabel(k)
-        : (mvIn ? keyLabel(mvIn.from) : OTHER_DAY);
-      const to = delta < 0
-        ? (mvOut ? keyLabel(mvOut.to) : OTHER_DAY)
-        : keyLabel(k);
+      /* 算法重新分配时无法定位到对侧的某一天，写「其他日期」——
+         与日历上「已分配至其他日期」的措辞一致 */
+      const from = delta < 0 ? keyLabel(k) : OTHER_DAY;
+      const to = delta < 0 ? OTHER_DAY : keyLabel(k);
 
-      /* 这一天有人工搬移记录，就把该行标成手动。
-         判定与上面的 from/to 同源：有 mvOut/mvIn 的日子两端都是具体日期，
-         算法重分配的日子一端是「其他日期」—— 标注和数据因此天然自洽。 */
-      const manual = !!(mvOut || mvIn);
       orders.forEach((o) => out.push({
         project: p.name, code: p.code,
-        no: o.no, device: o.device, alias: o.alias, from, to, manual,
+        no: o.no, device: o.device, alias: o.alias, from, to, manual: false,
       }));
     });
     return out;
@@ -2001,9 +2041,16 @@
     openAdjust({
       srcKey,
       selKey,
+      /* 列完整工单清单（含上次已挑走的），否则重新编辑时已调整的工单会凭空消失 */
+      load: dayLoadBeforeOut(srcKey),
+      /* 勾选决定搬哪几张，只在方案 C 开启 —— A/B 已冻结，那两套按整天搬移。
+         点「已手动调整至 X」进来时，把上次挑中的工单默认勾回来：
+         这一刻用户要核对或改的就是那几张，让他自己重新找一遍没有道理。 */
+      pickable: isC(),
+      picked: mv && mv.orders ? mv.orders.map((o) => o.no) : null,
       // 取消也要退回调整模式，不能把用户丢回智能编排首页
       onCancel: () => openPlanFlowB(editView()),
-      onConfirm: (toDay) => {
+      onConfirm: (toDay, list) => {
         const [y, m] = srcKey.split('-').map(Number);
         const toKey = toDay ? `${y}-${m}-${toDay}` : srcKey;
 
@@ -2017,8 +2064,15 @@
           return;
         }
 
-        /* 搬移量取该日现方案的保养量，没有则退回原方案的量 */
-        const amt = dayLoad(srcKey);
+        /* 搬移量：方案 C 由勾选的工单算出（勾了 3 张就只动 3 张），
+           A/B 仍取该日现方案的整天量，没有则退回原方案的量。
+           工单清单一并记下来，应用确认的明细直接列这几张。 */
+        const base = dayLoadBeforeOut(srcKey);
+        const orders = (list && list.length) ? list : null;
+        const units = orders ? orders.length : base[0];
+        const hours = orders
+          ? Math.round(orders.reduce((s, o) => s + o.minutes, 0) / 60 * 100) / 100
+          : base[1];
         /* 记下项目归属 —— 应用确认里的明细表要说清「调的是哪个项目的工单」。
            与弹窗项目下拉同一个函数，两处显示的项目必然一致。 */
         const proj = projectForDay(srcKey);
@@ -2028,14 +2082,17 @@
         manualMoves.push({
           from: srcKey,
           to: toKey,
-          units: amt[0],
-          hours: amt[1],
+          units,
+          hours,
+          orders,
           project: proj.name,
           code: proj.code,
         });
 
         openPlanFlowB(editView());
-        toast(`已将 ${keyLabel(srcKey)} 的保养调整至 ${keyLabel(toKey)}`);
+        toast(units < base[0]
+          ? `已将 ${keyLabel(srcKey)} 的 ${units} 张工单调整至 ${keyLabel(toKey)}`
+          : `已将 ${keyLabel(srcKey)} 的保养调整至 ${keyLabel(toKey)}`);
       },
     });
   }

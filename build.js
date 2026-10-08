@@ -54,7 +54,23 @@ html = html.replace(/<head>/, `<head>
 
 fs.writeFileSync(OUT, html, 'utf8');
 
+/* 同步到 GitHub Pages 的发布目录。放在构建里是因为手动拷贝一定会忘，
+   忘一次线上就停在旧版本 —— 而这种「代码改了但线上没变」最难自查。
+   docs/ 是 Pages 支持的两个发布位置之一（另一个是仓库根目录）。 */
+const PAGES = [
+  path.join('docs', 'index.html'),
+  path.join('docs', OUT),
+];
+const synced = [];
+if (fs.existsSync('docs')) {
+  PAGES.forEach((p) => {
+    fs.writeFileSync(p, html, 'utf8');
+    synced.push(p);
+  });
+}
+
 const kb = (fs.statSync(OUT).size / 1024).toFixed(1);
 console.log(`✓ 已生成 ${OUT}（${kb} KB）`);
 console.log(`  内联资源：${inlined.join('、')}`);
 console.log('  外部依赖：无（可离线打开）');
+if (synced.length) console.log(`  已同步发布目录：${synced.join('、')}`);

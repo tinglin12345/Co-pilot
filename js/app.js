@@ -3058,11 +3058,21 @@
     document.body.classList.toggle('plan-c', isC());
   }
 
+  /* 按 PROTO_UI 开关隐藏原型脚手架。走 body 上的类名 + CSS，
+     不删 DOM —— 删了 renderProto 里无保护的 $('#protoToggle') 会抛错。 */
+  function syncProtoUi() {
+    document.body.classList.toggle('hide-proto-nav', !PROTO_UI.nav);
+    document.body.classList.toggle('hide-mode-b', !PROTO_UI.modeB);
+    /* 方案B 的入口藏了却停在方案B，就没有按钮能切回来了 */
+    if (!PROTO_UI.modeB && isB()) planMode = 'A';
+  }
+
   /* =======================================================================
      启动
      ===================================================================== */
   renderMenu();
   renderProto();
+  syncProtoUi();
   syncModeButtons();
 
   /* smart-failed 不在导航列表里，但要保持链接可用 */

@@ -1774,6 +1774,15 @@
 .toast .tc svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; }
 
 /* =============================== 原型导航 =============================== */
+/* 由 data.js 的 PROTO_UI 控制显隐。隐藏而不删 DOM，
+   因为 renderProto 里 #protoToggle 的事件绑定没有空值保护。
+   面板一并隐藏：它只能由浮钮打开，浮钮没了也就打不开，
+   但万一带着 hidden 类被移除过，这里兜一道。 */
+body.hide-proto-nav #protoToggle,
+body.hide-proto-nav #protoPanel { display: none; }
+
+body.hide-mode-b #modeToggle { display: none; }
+
 /* 停靠在内容区左下角，避免压住侧栏底部的收起按钮 */
 .proto {
   position: fixed;

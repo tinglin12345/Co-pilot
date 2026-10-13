@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<!-- 本文件由 build.js 自动生成（2026-10-08 09:38:05），已内联全部样式与脚本，
+<!-- 本文件由 build.js 自动生成（2026-10-13 07:08:31），已内联全部样式与脚本，
      可直接双击打开或发送给他人，无需任何外部文件与网络。
      请勿直接编辑此文件 —— 改动请在 css/ 与 js/ 下进行，然后重新执行 node build.js -->
 <meta charset="UTF-8" />
@@ -2136,6 +2136,15 @@ svg { display: block; }
 .toast .tc svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; }
 
 /* =============================== 原型导航 =============================== */
+/* 由 data.js 的 PROTO_UI 控制显隐。隐藏而不删 DOM，
+   因为 renderProto 里 #protoToggle 的事件绑定没有空值保护。
+   面板一并隐藏：它只能由浮钮打开，浮钮没了也就打不开，
+   但万一带着 hidden 类被移除过，这里兜一道。 */
+body.hide-proto-nav #protoToggle,
+body.hide-proto-nav #protoPanel { display: none; }
+
+body.hide-mode-b #modeToggle { display: none; }
+
 /* 停靠在内容区左下角，避免压住侧栏底部的收起按钮 */
 .proto {
   position: fixed;
@@ -2934,6 +2943,18 @@ const MOVED_NOTE = {
 const MINI_TAG = {
   before: '调整前',
   after: '调整后',
+};
+
+/* 原型脚手架的显隐开关。「界面导航」和「方案B」对外演示时不需要露出，
+   但都留在代码里随时能开回来 —— 方案 B 是对照方案，不是废弃代码，
+   直接删掉以后想再对比一次就得重写一遍。
+
+   用开关 + CSS 隐藏而不是删 DOM：app.js 里 #protoToggle 的事件绑定
+   没有空值保护，元素一删 renderProto 就抛错，整页白屏。
+   想恢复把对应项改回 true 即可。 */
+const PROTO_UI = {
+  nav: false,     // 左下「界面导航」浮钮及其面板
+  modeB: false,   // 「方案B」切换浮钮
 };
 
 /* 现方案清空当天的说明。与「无保养安排」合并为一句，直接写在色块里，
@@ -6116,11 +6137,21 @@ const PROTO_SCREENS = [
     document.body.classList.toggle('plan-c', isC());
   }
 
+  /* 按 PROTO_UI 开关隐藏原型脚手架。走 body 上的类名 + CSS，
+     不删 DOM —— 删了 renderProto 里无保护的 $('#protoToggle') 会抛错。 */
+  function syncProtoUi() {
+    document.body.classList.toggle('hide-proto-nav', !PROTO_UI.nav);
+    document.body.classList.toggle('hide-mode-b', !PROTO_UI.modeB);
+    /* 方案B 的入口藏了却停在方案B，就没有按钮能切回来了 */
+    if (!PROTO_UI.modeB && isB()) planMode = 'A';
+  }
+
   /* =======================================================================
      启动
      ===================================================================== */
   renderMenu();
   renderProto();
+  syncProtoUi();
   syncModeButtons();
 
   /* smart-failed 不在导航列表里，但要保持链接可用 */

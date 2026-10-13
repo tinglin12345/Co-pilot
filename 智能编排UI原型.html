@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<!-- 本文件由 build.js 自动生成（2026-10-13 07:08:31），已内联全部样式与脚本，
+<!-- 本文件由 build.js 自动生成（2026-10-13 07:24:24），已内联全部样式与脚本，
      可直接双击打开或发送给他人，无需任何外部文件与网络。
      请勿直接编辑此文件 —— 改动请在 css/ 与 js/ 下进行，然后重新执行 node build.js -->
 <meta charset="UTF-8" />
@@ -1422,6 +1422,32 @@ svg { display: block; }
   color: var(--primary);
 }
 
+/* 智能编排记录的操作标签。四类操作按「这条记录意味着什么」配色：
+     生成 = 中性信息蓝、手动调整 = 紫（与日历上人工调整的紫一致）、
+     撤销 = 灰（把东西撤回去了，不是新增状态）、应用 = 绿（已落地生效）。
+   紫色沿用日历那套，是为了让「手动调整」在日历和历史里是同一个视觉符号。 */
+.tag-log {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.tag-log.gen { background: var(--primary-bg); border-color: var(--primary-border); color: var(--primary-active); }
+.tag-log.tune { background: #f4f0ff; border-color: #d3c4f9; color: #6632d9; }
+.tag-log.undo { background: var(--bg-head); border-color: var(--border-2); color: var(--text-2); }
+.tag-log.apply { background: #f6ffed; border-color: #b7eb8f; color: #389e0d; }
+
+/* 记录表：时间与操作人是定宽的参照列，内容列吃掉剩下的空间。
+   时间用等宽数字，否则逐行对齐会因为数字宽度不一而发虚。 */
+.table .col-time { width: 148px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.table .col-act { width: 104px; }
+.table .col-who { width: 92px; white-space: nowrap; }
+
 .btn-link.danger { color: var(--danger); }
 .btn-link.danger:hover { color: #ff7875; }
 
@@ -2144,6 +2170,11 @@ body.hide-proto-nav #protoToggle,
 body.hide-proto-nav #protoPanel { display: none; }
 
 body.hide-mode-b #modeToggle { display: none; }
+body.hide-mode-c #modeToggleC { display: none; }
+
+/* 三个浮钮全藏起来时，连那个固定定位的空容器一起收掉，
+   否则左下角会留一个看不见但仍在布局里的壳 */
+body.hide-proto-nav.hide-mode-b.hide-mode-c .proto { display: none; }
 
 /* 停靠在内容区左下角，避免压住侧栏底部的收起按钮 */
 .proto {
@@ -2955,6 +2986,66 @@ const MINI_TAG = {
 const PROTO_UI = {
   nav: false,     // 左下「界面导航」浮钮及其面板
   modeB: false,   // 「方案B」切换浮钮
+  modeC: false,   // 「方案C」切换浮钮。藏起来时直接锁定在方案 C
+};
+
+/* --------------------- 智能编排记录：操作历史 --------------------- */
+/* 「智能编排记录」入口原先只弹个 toast 说没实现。现在把它做成操作历史：
+   生成、手动调整、撤销、应用各记一条，用户在原型里做的每一步都会追加进来。
+
+   为什么要有这个页面：方案一旦应用就不可撤销，而调整往往要跨几天、
+   由不同人经手。没有历史的话，「这天的工单是谁什么时候挪过去的」
+   除了去翻工单本身没有别的办法。 */
+const SMART_LOG_ACTION = {
+  generate: { label: '生成方案', tone: 'gen' },
+  tune: { label: '手动调整', tone: 'tune' },
+  undo: { label: '撤销调整', tone: 'undo' },
+  apply: { label: '应用方案', tone: 'apply' },
+};
+
+const SMART_LOG_FILTER_ALL = '全部操作';
+
+const SMART_LOG_OPERATOR = '赵德刚';
+
+/* 存量历史。时间写成「多少分钟前」而不是固定日期 —— 原型可能在任何时候被打开，
+   写死 2026-09-28 的话，换个时间看就成了「历史记录发生在未来」。 */
+const SMART_LOG_SEED = [
+  {
+    minutesAgo: 60 * 24 * 4 + 132,
+    action: 'generate',
+    detail: '工作组 KCCW0012（赵波 张文字）生成 10月1日-12月31日 工作量均衡方案',
+  },
+  {
+    minutesAgo: 60 * 24 * 4 + 118,
+    action: 'tune',
+    detail: '将 10月13日 的 35 张工单调整至 10月14日',
+  },
+  {
+    minutesAgo: 60 * 24 * 4 + 96,
+    action: 'apply',
+    detail: '应用方案，覆盖 10月1日-12月31日 共 1404 张工单',
+  },
+  {
+    minutesAgo: 60 * 24 * 2 + 51,
+    action: 'generate',
+    detail: '工作组 KCCW0012（赵波 张文字）按新编排条件重新生成方案',
+  },
+  {
+    minutesAgo: 60 * 24 * 2 + 37,
+    action: 'undo',
+    detail: '撤销 10月20日 的手动调整，恢复算法方案',
+  },
+  {
+    minutesAgo: 60 * 5 + 24,
+    action: 'tune',
+    detail: '将 10月8日 的 12 张工单调整至 10月10日',
+  },
+];
+
+const SMART_LOG_TEXT = {
+  title: '智能编排记录',
+  hint: '记录本工作组的方案生成、调整与应用操作，仅供追溯，不可编辑',
+  empty: '暂无操作记录',
 };
 
 /* 现方案清空当天的说明。与「无保养安排」合并为一句，直接写在色块里，
@@ -2965,14 +3056,15 @@ const REALLOCATED_NOTE = '已分配至其他日期';
    只有人工搬移才记录了明确的 from/to。措辞与 REALLOCATED_NOTE 保持一致。 */
 const OTHER_DAY = '其他日期';
 
-/* --------------------- 人员安排：工作日不保养 / 非工作日保养 --------------------- */
+/* --------------------- 人员安排：当日保养 / 当日不保养 --------------------- */
 /* 功能原名「请假排班」，因类型值已全部改为保养口径，功能名同步改为「人员安排」。
-   类型语义：
-     workdayOff  工作日不保养 —— 成员在本应工作的日子不参与保养（原「请假」）
-     restdayOn   非工作日保养 —— 成员在休息日参与保养（原「调班」） */
+   类型语义（措辞不再提「工作日 / 非工作日」—— 那是在说这一天本身的性质，
+   而这条记录真正要表达的是「这一天这个人保不保养」）：
+     workdayOff  当日不保养 —— 成员这天不参与保养（原「请假」）
+     restdayOn   当日保养 —— 成员这天参与保养（原「调班」） */
 const LEAVE_TYPE_LABEL = {
-  workdayOff: '工作日不保养',
-  restdayOn: '非工作日保养',
+  workdayOff: '当日不保养',
+  restdayOn: '当日保养',
 };
 
 /* 功能名集中一处，便于统一调整 */
@@ -2980,7 +3072,13 @@ const PLAN_ADJUST_NAME = '人员安排';
 
 /* 列表上方的类型筛选项，「全部」用于查看全量记录 */
 const LEAVE_FILTER_ALL = '全部';
-const LEAVE_FILTER_OPTIONS = [LEAVE_FILTER_ALL, '工作日不保养', '非工作日保养'];
+/* 引用 LEAVE_TYPE_LABEL 而不是重写一遍字面量：筛选项与表格里的标签
+   必须完全一致（筛选就是按标签文本比的），各写一份迟早对不上 */
+const LEAVE_FILTER_OPTIONS = [
+  LEAVE_FILTER_ALL,
+  LEAVE_TYPE_LABEL.workdayOff,
+  LEAVE_TYPE_LABEL.restdayOn,
+];
 
 /* 全量记录。字段与「人员安排设置」弹窗采集的项一一对应：人员 / 类型 / 开始时间 / 结束时间。
    已去掉上午下午（半天粒度）与时长 —— 计划调整按整天记，时长可由起止日期推出。
@@ -3021,8 +3119,8 @@ const SMART_FAIL_TYPES = {
   noStaff: {
     code: 'SCHED_NO_AVAILABLE_STAFF',
     reason: '工作组在所选时间范围内没有可排班人员',
-    detail: '2 名成员全部被设为「工作日不保养」，可用人力为 0',
-    guide: '到「人员安排」减少「工作日不保养」记录，或补充人员',
+    detail: '2 名成员全部被设为「当日不保养」，可用人力为 0',
+    guide: '到「人员安排」减少「当日不保养」记录，或补充人员',
     retryable: false,
     primary: { text: '去人员安排', go: 'leave' },
   },
@@ -3116,7 +3214,9 @@ const PROTO_SCREENS = [
                'B' = 串行流程（查看方案 → 对比预览 → 确认应用）
      仅影响「查看智能编排方案」之后的交互，其余界面完全一致。
      ===================================================================== */
-  let planMode = 'A';
+  /* 默认 C —— A/B 的切换入口都已隐藏（见 PROTO_UI），C 是现在唯一保留的设计。
+     syncProtoUi() 启动时还会再锁一次，这里只是让默认值自己就说得通。 */
+  let planMode = 'C';
   /* 方案 B：记录每一次人工搬移，而不只是「哪天被改过」。
      对比视图要说清「从哪天挪到哪天」，所以必须存成对的 from / to。 */
   let manualMoves = [];   // [{ from, to, units, hours }]
@@ -3125,6 +3225,28 @@ const PROTO_SCREENS = [
        planMoves   —— 改的是已在执行的计划（首页），不经过智能编排
      两者分开存，否则应用方案时清空 manualMoves 会把首页的调整一起抹掉。 */
   let planMoves = [];     // [{ from, to, units, hours }]
+
+  /* 智能编排操作历史。存量记录按「多少分钟前」换算成真实时间戳，
+     之后用户每做一步都 unshift 进来 —— 最新的在最上面，和列表的阅读顺序一致。 */
+  /* 倒序排好：种子数据在 data.js 里是按时间正序写的（读起来像一条时间线），
+     但列表要最新在最上，和 logSmart 的 unshift 方向保持一致。
+     不排的话表格会出现「中间一段是正序、头部是倒序」的拧劲。 */
+  let smartLog = SMART_LOG_SEED
+    .map((s) => ({
+      at: new Date(Date.now() - s.minutesAgo * 60000),
+      action: s.action,
+      detail: s.detail,
+      who: SMART_LOG_OPERATOR,
+    }))
+    .sort((a, b) => b.at - a.at);
+
+  function logSmart(action, detail) {
+    smartLog.unshift({ at: new Date(), action, detail, who: SMART_LOG_OPERATOR });
+  }
+
+  const fmtLogTime = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+    + ` ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+
   const dayKey = (c) => `${c._y}-${c._m}-${c.d}`;
   const keyLabel = (k) => { const [, m, d] = k.split('-'); return `${+m}月${+d}日`; };
   const movedFrom = (k) => manualMoves.find((m) => m.from === k);   // 这天的活被挪走
@@ -3963,7 +4085,11 @@ const PROTO_SCREENS = [
         const mv = planMovedFrom(btn.dataset.undoPlan);
         planMoves = planMoves.filter((m) => m.from !== btn.dataset.undoPlan);
         openPlanTune();
-        if (mv) toast(`已撤销 ${keyLabel(mv.from)} → ${keyLabel(mv.to)} 的调整`);
+        if (mv) {
+          logSmart('undo',
+            `撤销 ${keyLabel(mv.from)} → ${keyLabel(mv.to)} 的手动调整（${mv.units} 张工单）`);
+          toast(`已撤销 ${keyLabel(mv.from)} → ${keyLabel(mv.to)} 的调整`);
+        }
       });
     });
   }
@@ -4045,6 +4171,8 @@ const PROTO_SCREENS = [
         planMoves.push({ from: srcKey, to: toKey, units, hours, orders });
         openPlanTune();
         const base = planDayLoadBeforeOut(srcKey)[0];
+        logSmart('tune',
+          `将 ${keyLabel(srcKey)} 的 ${units} 张工单调整至 ${keyLabel(toKey)}（待应用）`);
         toast(units < base
           ? `已将 ${keyLabel(srcKey)} 的 ${units} 张工单调整至 ${keyLabel(toKey)}`
           : `已将 ${keyLabel(srcKey)} 的保养调整至 ${keyLabel(toKey)}`);
@@ -4187,10 +4315,13 @@ const PROTO_SCREENS = [
 
     $('#btnPlanTuneConfirmApply', layer).addEventListener('click', () => {
       layer.remove();
+      const orders = groups.reduce((s, g) => s + g.orders.length, 0);
       /* 落地为当前计划：快照跟进，之后「返回」不再回滚它 */
       planMovesSnapshot = planMoves.slice();
       closeOverlays();
       renderView('smart');
+      logSmart('apply',
+        `应用手动调整的保养计划，共 ${days} 天 ${orders} 张工单调整日期`);
       toast(`保养计划已更新（${days} 天手动调整）`);
     });
   }
@@ -4227,10 +4358,9 @@ const PROTO_SCREENS = [
     const c = $('#btnGotoConditions');
     if (c) c.addEventListener('click', gotoConditions);
 
-    /* 智能编排记录：现网有此入口，但没有对应截图，暂不臆造页面。
-       给出明确反馈，避免在原型里表现为「按了没反应」。 */
+    /* 智能编排记录 → 操作历史（生成 / 调整 / 撤销 / 应用都记一条） */
     const rec = $('#btnSmartRecords');
-    if (rec) rec.addEventListener('click', () => toast('智能编排记录：暂无设计稿，未实现此页'));
+    if (rec) rec.addEventListener('click', openSmartRecords);
 
     /* 点击日历单元格 → 编排调整。
        方案 C 下已由上面的 data-enter-day 接管（进手动调整页并带上被点日期），
@@ -5053,8 +5183,13 @@ const PROTO_SCREENS = [
   /* ---------------- 方案 B 的两条「不应用」出路 ---------------- */
 
   function applyPlan() {
-    const suffix = isFlow() && isTuned() ? `（含 ${manualDayCount()} 天人工调整）` : '';
+    const tuned = isFlow() && isTuned();
+    const suffix = tuned ? `（含 ${manualDayCount()} 天人工调整）` : '';
+    /* 工单数要在清空 manualMoves 之前算 —— 清完就数不出来了 */
+    const orders = applyOrderRowsC().length;
     manualMoves = [];
+    logSmart('apply',
+      `应用智能编排方案，共 ${orders} 张工单调整日期${suffix}`);
     toast(`智能编排方案已应用${suffix}`);
   }
 
@@ -5149,6 +5284,8 @@ const PROTO_SCREENS = [
           const had = !!movedFrom(srcKey);
           manualMoves = manualMoves.filter((m2) => m2.from !== srcKey);
           openPlanFlowB(editView());
+          /* 没产生调整的那种情况不记 —— 日志里塞「什么都没做」是噪音 */
+          if (had) logSmart('undo', `撤销 ${keyLabel(srcKey)} 的手动调整，恢复算法方案`);
           toast(had ? `已撤销 ${keyLabel(srcKey)} 的调整，恢复算法方案`
             : '目标日期与原计划日期相同，未产生调整');
           return;
@@ -5180,6 +5317,10 @@ const PROTO_SCREENS = [
         });
 
         openPlanFlowB(editView());
+        /* 记进操作历史。数量一律写出来 —— 历史是用来追溯的，
+           「调整了保养」这种说法事后看等于什么都没说。 */
+        logSmart('tune',
+          `方案内将 ${keyLabel(srcKey)} 的 ${units} 张工单调整至 ${keyLabel(toKey)}`);
         toast(units < base[0]
           ? `已将 ${keyLabel(srcKey)} 的 ${units} 张工单调整至 ${keyLabel(toKey)}`
           : `已将 ${keyLabel(srcKey)} 的保养调整至 ${keyLabel(toKey)}`);
@@ -5192,6 +5333,7 @@ const PROTO_SCREENS = [
     const n = manualDayCount();
     manualMoves = [];
     openPlanFlowB(editView());
+    logSmart('undo', `撤销全部手动调整（共 ${n} 天），恢复为算法生成的方案`);
     toast(`已撤销 ${n} 天人工调整，恢复为算法生成的方案`);
   }
 
@@ -5200,7 +5342,11 @@ const PROTO_SCREENS = [
     const mv = manualMoves.find((m) => m.from === fromKey);
     manualMoves = manualMoves.filter((m) => m.from !== fromKey);
     openPlanFlowB(editView());
-    if (mv) toast(`已撤销 ${keyLabel(mv.from)} → ${keyLabel(mv.to)} 的调整`);
+    if (mv) {
+      logSmart('undo',
+        `撤销 ${keyLabel(mv.from)} → ${keyLabel(mv.to)} 的手动调整（${mv.units} 张工单）`);
+      toast(`已撤销 ${keyLabel(mv.from)} → ${keyLabel(mv.to)} 的调整`);
+    }
   }
 
   function bindPlanCells() {
@@ -5506,6 +5652,93 @@ const PROTO_SCREENS = [
   }
 
   /* =======================================================================
+     浮层：智能编排记录（操作历史）
+     ===================================================================== */
+  /* 只读列表，所以不给「操作」列也不给页脚按钮 —— 历史能被编辑就不叫历史了。
+     做成抽屉而不是弹窗：记录条数会随使用增长，需要整页的纵向空间。 */
+  function smartLogTableHtml(filterLabel) {
+    const all = smartLog;
+    const rows = (filterLabel && filterLabel !== SMART_LOG_FILTER_ALL)
+      ? all.filter((r) => SMART_LOG_ACTION[r.action].label === filterLabel)
+      : all;
+
+    const head = `
+      <thead>
+        <tr>
+          <th class="col-time">时间</th>
+          <th class="col-act">操作</th>
+          <th>内容</th>
+          <th class="col-who">操作人</th>
+        </tr>
+      </thead>`;
+
+    if (!rows.length) {
+      return `<table class="table">${head}</table>
+        <div class="empty">${EMPTY_SVG}<div class="empty-text">${SMART_LOG_TEXT.empty}</div></div>`;
+    }
+
+    const body = rows.map((r) => {
+      const a = SMART_LOG_ACTION[r.action];
+      return `
+        <tr>
+          <td class="col-time">${fmtLogTime(r.at)}</td>
+          <td class="col-act"><span class="tag-log ${a.tone}">${a.label}</span></td>
+          <td>${r.detail}</td>
+          <td class="col-who">${r.who}</td>
+        </tr>`;
+    }).join('');
+
+    const summary = `
+      <div class="list-summary">
+        共 ${rows.length} 条${filterLabel && filterLabel !== SMART_LOG_FILTER_ALL
+      ? `（已按「${filterLabel}」筛选，全部 ${all.length} 条）` : ''}
+      </div>`;
+
+    return summary + `<table class="table">${head}<tbody>${body}</tbody></table>`;
+  }
+
+  function openSmartRecords() {
+    const opts = [SMART_LOG_FILTER_ALL]
+      .concat(Object.keys(SMART_LOG_ACTION).map((k) => SMART_LOG_ACTION[k].label));
+
+    mountOverlay(`
+      <div class="mask" data-close-drawer></div>
+      <aside class="drawer" id="smartLogDrawer">
+        <div class="drawer-head">
+          <span class="grow">${SMART_LOG_TEXT.title}</span>
+          <button class="icon-btn" title="全屏">${expandIco}</button>
+          <button class="icon-btn" data-close-drawer title="关闭">${closeX}</button>
+        </div>
+        <div class="drawer-body">
+          <div class="filterbar">
+            <div class="field">
+              <span class="field-label">工作组</span>
+              ${dd('赵波 张文字（KCCW0012）', ['赵波 张文字（KCCW0012）'], 'control-w-xl')}
+            </div>
+            <div class="field">
+              <span class="field-label">操作</span>
+              ${dd(SMART_LOG_FILTER_ALL, opts, 'control-w-md', '', 'smartLogFilter')}
+            </div>
+            <div class="grow"></div>
+            <span class="foot-hint">${SMART_LOG_TEXT.hint}</span>
+          </div>
+          <div id="smartLogTableWrap">${smartLogTableHtml(SMART_LOG_FILTER_ALL)}</div>
+        </div>
+      </aside>`);
+
+    /* 筛选项变了就只重渲表格，不动整个抽屉 —— 否则下拉会收起、滚动位置也丢 */
+    const ctl = $('#smartLogFilter');
+    if (ctl) {
+      ctl.addEventListener('dd:change', () => {
+        const wrap = $('#smartLogTableWrap');
+        if (wrap) wrap.innerHTML = smartLogTableHtml(ddValue(ctl));
+      });
+    }
+
+    initWidgets(overlayMount);
+  }
+
+  /* =======================================================================
      浮层：人员安排设置（截图 5）
      ===================================================================== */
   /* 只有新增态 —— 列表已取消「编辑」操作。
@@ -5800,6 +6033,8 @@ const PROTO_SCREENS = [
   }
 
   function finishGenerating(el) {
+    logSmart('generate',
+      '工作组 KCCW0012（赵波 张文字）生成工作量均衡方案，待查看与应用');
     $('.notify-head .grow', el).textContent = '智能编排方案已生成';
     $('.notify-text', el).innerHTML =
       `工作组 KCCW0012(赵波 张文字) 的工作量均衡方案已生成，可查看并与当前日历对比。`;
@@ -6142,8 +6377,12 @@ const PROTO_SCREENS = [
   function syncProtoUi() {
     document.body.classList.toggle('hide-proto-nav', !PROTO_UI.nav);
     document.body.classList.toggle('hide-mode-b', !PROTO_UI.modeB);
-    /* 方案B 的入口藏了却停在方案B，就没有按钮能切回来了 */
-    if (!PROTO_UI.modeB && isB()) planMode = 'A';
+    document.body.classList.toggle('hide-mode-c', !PROTO_UI.modeC);
+    /* 某个方案的入口藏了，就不能停在那个方案上 —— 没有任何按钮能切出去。
+       方案 C 是现在唯一保留的设计，所以它的入口一藏就直接锁定在 C；
+       只藏 B 时落回 A（那时 C 的按钮还在，两者仍可互切）。 */
+    if (!PROTO_UI.modeC) planMode = 'C';
+    else if (!PROTO_UI.modeB && isB()) planMode = 'A';
   }
 
   /* =======================================================================

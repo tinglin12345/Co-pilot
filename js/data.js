@@ -582,6 +582,66 @@ const MINI_TAG = {
 const PROTO_UI = {
   nav: false,     // 左下「界面导航」浮钮及其面板
   modeB: false,   // 「方案B」切换浮钮
+  modeC: false,   // 「方案C」切换浮钮。藏起来时直接锁定在方案 C
+};
+
+/* --------------------- 智能编排记录：操作历史 --------------------- */
+/* 「智能编排记录」入口原先只弹个 toast 说没实现。现在把它做成操作历史：
+   生成、手动调整、撤销、应用各记一条，用户在原型里做的每一步都会追加进来。
+
+   为什么要有这个页面：方案一旦应用就不可撤销，而调整往往要跨几天、
+   由不同人经手。没有历史的话，「这天的工单是谁什么时候挪过去的」
+   除了去翻工单本身没有别的办法。 */
+const SMART_LOG_ACTION = {
+  generate: { label: '生成方案', tone: 'gen' },
+  tune: { label: '手动调整', tone: 'tune' },
+  undo: { label: '撤销调整', tone: 'undo' },
+  apply: { label: '应用方案', tone: 'apply' },
+};
+
+const SMART_LOG_FILTER_ALL = '全部操作';
+
+const SMART_LOG_OPERATOR = '赵德刚';
+
+/* 存量历史。时间写成「多少分钟前」而不是固定日期 —— 原型可能在任何时候被打开，
+   写死 2026-09-28 的话，换个时间看就成了「历史记录发生在未来」。 */
+const SMART_LOG_SEED = [
+  {
+    minutesAgo: 60 * 24 * 4 + 132,
+    action: 'generate',
+    detail: '工作组 KCCW0012（赵波 张文字）生成 10月1日-12月31日 工作量均衡方案',
+  },
+  {
+    minutesAgo: 60 * 24 * 4 + 118,
+    action: 'tune',
+    detail: '将 10月13日 的 35 张工单调整至 10月14日',
+  },
+  {
+    minutesAgo: 60 * 24 * 4 + 96,
+    action: 'apply',
+    detail: '应用方案，覆盖 10月1日-12月31日 共 1404 张工单',
+  },
+  {
+    minutesAgo: 60 * 24 * 2 + 51,
+    action: 'generate',
+    detail: '工作组 KCCW0012（赵波 张文字）按新编排条件重新生成方案',
+  },
+  {
+    minutesAgo: 60 * 24 * 2 + 37,
+    action: 'undo',
+    detail: '撤销 10月20日 的手动调整，恢复算法方案',
+  },
+  {
+    minutesAgo: 60 * 5 + 24,
+    action: 'tune',
+    detail: '将 10月8日 的 12 张工单调整至 10月10日',
+  },
+];
+
+const SMART_LOG_TEXT = {
+  title: '智能编排记录',
+  hint: '记录本工作组的方案生成、调整与应用操作，仅供追溯，不可编辑',
+  empty: '暂无操作记录',
 };
 
 /* 现方案清空当天的说明。与「无保养安排」合并为一句，直接写在色块里，
@@ -592,14 +652,15 @@ const REALLOCATED_NOTE = '已分配至其他日期';
    只有人工搬移才记录了明确的 from/to。措辞与 REALLOCATED_NOTE 保持一致。 */
 const OTHER_DAY = '其他日期';
 
-/* --------------------- 人员安排：工作日不保养 / 非工作日保养 --------------------- */
+/* --------------------- 人员安排：当日保养 / 当日不保养 --------------------- */
 /* 功能原名「请假排班」，因类型值已全部改为保养口径，功能名同步改为「人员安排」。
-   类型语义：
-     workdayOff  工作日不保养 —— 成员在本应工作的日子不参与保养（原「请假」）
-     restdayOn   非工作日保养 —— 成员在休息日参与保养（原「调班」） */
+   类型语义（措辞不再提「工作日 / 非工作日」—— 那是在说这一天本身的性质，
+   而这条记录真正要表达的是「这一天这个人保不保养」）：
+     workdayOff  当日不保养 —— 成员这天不参与保养（原「请假」）
+     restdayOn   当日保养 —— 成员这天参与保养（原「调班」） */
 const LEAVE_TYPE_LABEL = {
-  workdayOff: '工作日不保养',
-  restdayOn: '非工作日保养',
+  workdayOff: '当日不保养',
+  restdayOn: '当日保养',
 };
 
 /* 功能名集中一处，便于统一调整 */
@@ -607,7 +668,13 @@ const PLAN_ADJUST_NAME = '人员安排';
 
 /* 列表上方的类型筛选项，「全部」用于查看全量记录 */
 const LEAVE_FILTER_ALL = '全部';
-const LEAVE_FILTER_OPTIONS = [LEAVE_FILTER_ALL, '工作日不保养', '非工作日保养'];
+/* 引用 LEAVE_TYPE_LABEL 而不是重写一遍字面量：筛选项与表格里的标签
+   必须完全一致（筛选就是按标签文本比的），各写一份迟早对不上 */
+const LEAVE_FILTER_OPTIONS = [
+  LEAVE_FILTER_ALL,
+  LEAVE_TYPE_LABEL.workdayOff,
+  LEAVE_TYPE_LABEL.restdayOn,
+];
 
 /* 全量记录。字段与「人员安排设置」弹窗采集的项一一对应：人员 / 类型 / 开始时间 / 结束时间。
    已去掉上午下午（半天粒度）与时长 —— 计划调整按整天记，时长可由起止日期推出。
@@ -648,8 +715,8 @@ const SMART_FAIL_TYPES = {
   noStaff: {
     code: 'SCHED_NO_AVAILABLE_STAFF',
     reason: '工作组在所选时间范围内没有可排班人员',
-    detail: '2 名成员全部被设为「工作日不保养」，可用人力为 0',
-    guide: '到「人员安排」减少「工作日不保养」记录，或补充人员',
+    detail: '2 名成员全部被设为「当日不保养」，可用人力为 0',
+    guide: '到「人员安排」减少「当日不保养」记录，或补充人员',
     retryable: false,
     primary: { text: '去人员安排', go: 'leave' },
   },

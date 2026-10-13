@@ -1060,6 +1060,32 @@
   color: var(--primary);
 }
 
+/* 智能编排记录的操作标签。四类操作按「这条记录意味着什么」配色：
+     生成 = 中性信息蓝、手动调整 = 紫（与日历上人工调整的紫一致）、
+     撤销 = 灰（把东西撤回去了，不是新增状态）、应用 = 绿（已落地生效）。
+   紫色沿用日历那套，是为了让「手动调整」在日历和历史里是同一个视觉符号。 */
+.tag-log {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.tag-log.gen { background: var(--primary-bg); border-color: var(--primary-border); color: var(--primary-active); }
+.tag-log.tune { background: #f4f0ff; border-color: #d3c4f9; color: #6632d9; }
+.tag-log.undo { background: var(--bg-head); border-color: var(--border-2); color: var(--text-2); }
+.tag-log.apply { background: #f6ffed; border-color: #b7eb8f; color: #389e0d; }
+
+/* 记录表：时间与操作人是定宽的参照列，内容列吃掉剩下的空间。
+   时间用等宽数字，否则逐行对齐会因为数字宽度不一而发虚。 */
+.table .col-time { width: 148px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.table .col-act { width: 104px; }
+.table .col-who { width: 92px; white-space: nowrap; }
+
 .btn-link.danger { color: var(--danger); }
 .btn-link.danger:hover { color: #ff7875; }
 
@@ -1782,6 +1808,11 @@ body.hide-proto-nav #protoToggle,
 body.hide-proto-nav #protoPanel { display: none; }
 
 body.hide-mode-b #modeToggle { display: none; }
+body.hide-mode-c #modeToggleC { display: none; }
+
+/* 三个浮钮全藏起来时，连那个固定定位的空容器一起收掉，
+   否则左下角会留一个看不见但仍在布局里的壳 */
+body.hide-proto-nav.hide-mode-b.hide-mode-c .proto { display: none; }
 
 /* 停靠在内容区左下角，避免压住侧栏底部的收起按钮 */
 .proto {

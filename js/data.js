@@ -630,20 +630,71 @@ const PLAN_D_TEXT = {
   demoTag: '原型',
 };
 
-/* 两个候选方案。指标刻意选得能体现取舍：均衡方案的繁重日少但总工时高，
-   省工时方案反过来 —— 否则「选择」这件事就是假的，总有一个全面占优。 */
+/* ---------------- 两个候选方案各自的日历 ----------------
+   「均衡分布」就是算法原本给的那份方案（CAL_PLAN）。
+
+   「总工时更短」由 CAL_PLAN_BASE 确定性推导，不手写第二份日历 ——
+   同一套数据写两遍，改了一边忘了另一边就会对不上，而卡片上的指标
+   和日历预览都要从这份数据现算，一旦分叉就会自己打自己。
+
+   推导方式对应它的业务含义「同一项目的设备尽量排在同一天」：
+   把每周的活按相邻两个活跃日合并到前一天，再给工时打个折
+   —— 集中作业省掉重复路途与进场准备。
+   结果必然是「活跃天数更少、单日更重、总工时更低」，正是这个方向该有的形态；
+   台量一分不差地保留，因为要做的活没变，变的只是怎么排。 */
+const GROUPED_SAVING = 0.92;
+
+function buildGroupedPlan(baseWeeks) {
+  return baseWeeks.map((week) => {
+    const row = week.map((c) => Object.assign({}, c));
+    const active = [];
+    row.forEach((c, i) => { if ((c.u || 0) > 0) active.push(i); });
+
+    for (let k = 0; k + 1 < active.length; k += 2) {
+      const a = row[active[k]];
+      const b = row[active[k + 1]];
+      a.u = (a.u || 0) + (b.u || 0);
+      a.h = Math.round(((a.h || 0) + (b.h || 0)) * GROUPED_SAVING * 10) / 10;
+      b.u = 0;
+      b.h = 0;
+    }
+    /* 活跃日为奇数个时最后那天没有可合并的对象，只打折 */
+    if (active.length % 2) {
+      const last = row[active[active.length - 1]];
+      last.h = Math.round((last.h || 0) * GROUPED_SAVING * 10) / 10;
+    }
+
+    /* heavy 一律按全局阈值现算，不能沿用合并前的标记 ——
+       合并后工时变了，旧标记必然失真 */
+    row.forEach((c) => {
+      if ((c.u || 0) > 0 && c.h >= HEAVY_HOURS) c.heavy = true;
+      else delete c.heavy;
+    });
+    return row;
+  });
+}
+
+const CAL_PLAN_D = {
+  balanced: CAL_PLAN,
+  shorter: buildCalendar(buildGroupedPlan(CAL_PLAN_BASE), MAX_WEEKS),
+};
+
+/* 预览与「工作量分布」都只看前 4 周 —— 与日历默认档位一致，
+   选定方案后进对比页看到的就是同一段范围 */
+const PLAN_D_PREVIEW_WEEKS = 4;
+
+/* 两个候选方案。这里只留无法从日历推导的字段：
+     最大人均计划工时 —— 取决于人员编制，日历上算不出来
+     good / bad       —— 定性的取舍描述，刻意不写数字，
+                         数字只在指标表里出现一次，避免两处各写一遍后对不上
+   工作量分布、总计划工时、总保养台量全部由 app.js 从各自的日历现算。 */
 const PLAN_D_CANDIDATES = [
   {
     id: 'balanced',
     name: '工单均衡分布',
     sub: '把工单尽量摊平到每一天',
     recommend: true,
-    metrics: [
-      { label: '工作量分布', value: '轻松 10 天 / 繁重 4 天', tone: 'good' },
-      { label: '最大人均计划工时', value: '17.54 小时' },
-      { label: '总计划工时', value: '1862 小时' },
-      { label: '需调整日期的工单', value: '1404 张' },
-    ],
+    peakPerHead: '17.54 小时',
     good: '每天工作量接近，排班压力平稳，现场好执行',
     bad: '总工时偏高，同一项目的设备会分散到不同日期',
   },
@@ -651,16 +702,23 @@ const PLAN_D_CANDIDATES = [
     id: 'shorter',
     name: '总工时更短',
     sub: '压缩总工时与重复路途',
-    metrics: [
-      { label: '工作量分布', value: '轻松 5 天 / 繁重 9 天', tone: 'bad' },
-      { label: '最大人均计划工时', value: '23.10 小时' },
-      { label: '总计划工时', value: '1765 小时', tone: 'good' },
-      { label: '需调整日期的工单', value: '1512 张' },
-    ],
-    good: '总工时少 97 小时，同一项目的设备尽量排在同一天',
-    bad: '出现 9 个繁重日，单日人均工时最高 23.1 小时',
+    peakPerHead: '23.10 小时',
+    good: '同一项目的设备尽量排在同一天，省掉重复路途与进场准备',
+    bad: '活变得集中，单日负荷高，排班与现场执行的压力都更大',
   },
 ];
+
+/* 预览日历的图例。与对比视图同一套三态口径（繁重 / 轻松 / 无保养安排），
+   颜色也复用同一批变量 —— 同一个概念在两个页面长得不一样是没必要的学习成本。 */
+const PLAN_D_PREVIEW_TEXT = {
+  caption: (n) => `前 ${n} 周保养分布预览`,
+  hint: '方块为当日保养台量，选定方案后可查看完整 13 周并逐日调整',
+  legend: [
+    { tone: 'busy', text: '繁重' },
+    { tone: 'easy', text: '轻松' },
+    { tone: 'none', text: '无保养安排' },
+  ],
+};
 
 /* 无可行解时的原因。要具体到数字 —— 「无可行解」四个字对主管没有任何
    决策价值，他需要知道是哪一类约束把路堵死了。 */

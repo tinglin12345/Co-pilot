@@ -1531,12 +1531,100 @@
     PLAN_D_CANDIDATES.every((c) => isCandidateOut(c.id));
   const planDCandidate = (id) => PLAN_D_CANDIDATES.find((c) => c.id === id);
 
+  /* 候选方案的指标，全部从它自己的日历现算。
+     不写死：卡片上的「轻松 N 天 / 繁重 N 天」与旁边的预览日历必须是
+     同一份数据的两种表达，各算一套迟早会出现「卡片说 10 天、
+     日历上数出来 9 格」这种自己打自己的情况。
+
+     分布只看前 4 周（与预览范围、日历默认档位一致）；
+     总量看满 13 周 —— 那才是「总计划工时」该有的口径。 */
+  function planDStat(id) {
+    const rows = CAL_PLAN_D[id];
+    const vis = rows.slice(0, PLAN_D_PREVIEW_WEEKS).flat().filter((x) => !x.blank);
+    const all = rows.flat().filter((x) => !x.blank);
+    return {
+      busy: vis.filter((x) => x.heavy).length,
+      easy: vis.filter((x) => !x.heavy && (x.u || 0) > 0).length,
+      units: all.reduce((s, x) => s + (x.u || 0), 0),
+      hours: Math.round(all.reduce((s, x) => s + (x.h || 0), 0)),
+    };
+  }
+
+  /* 指标的优劣着色要两卡互比后才能定 —— 单看一张卡无从判断谁更优，
+     而两张都着色等于都没着色。所以在这里一次算出两边再分配。 */
+  function planDMetrics(id) {
+    const me = planDStat(id);
+    const other = planDStat(id === 'balanced' ? 'shorter' : 'balanced');
+    const cand = planDCandidate(id);
+
+    const tone = (mine, theirs, better) => {
+      if (mine === theirs) return '';
+      const win = better === 'down' ? mine < theirs : mine > theirs;
+      return win ? 'good' : 'bad';
+    };
+
+    return [
+      {
+        /* 优劣按「轻松天数」比，不按繁重天数 —— 两个方向的繁重日恰好都是 2 天，
+           拿它比分不出高下；而同样的活摊在更多天上才是「均衡」的实质。
+           轻松 + 繁重 也正好等于有保养安排的天数，集中程度读者自己能看出来，
+           不必再单列一行。 */
+        label: '工作量分布',
+        value: `轻松 ${me.easy} 天 / 繁重 ${me.busy} 天`,
+        tone: tone(me.easy, other.easy, 'up'),
+      },
+      { label: '最大人均计划工时', value: cand.peakPerHead },
+      {
+        label: '总计划工时',
+        value: `${me.hours} 小时`,
+        tone: tone(me.hours, other.hours, 'down'),
+      },
+      /* 两个方向的台量必然相同（要做的活没变，变的只是怎么排）。
+         放进来不是为了比大小，而是把这件事说清楚 —— 否则看到总工时
+         有差会以为是漏排了设备。 */
+      { label: '总保养台量', value: `${me.units} 台` },
+    ];
+  }
+
+  /* 候选方案的日历预览。用色块热力图而不是数字表格：
+     两个方向的差别本质是「分布形态」，一眼看出哪几天堆在一起、
+     哪几天是空的，比四行数字直观得多 —— 这也是加这张预览的全部理由。 */
+  function planDPreviewHtml(id) {
+    const rows = CAL_PLAN_D[id].slice(0, PLAN_D_PREVIEW_WEEKS);
+
+    const head = WEEKDAYS.map((w) =>
+      `<div class="pdp-h">${w.replace('周', '')}</div>`).join('');
+
+    const body = rows.map((row) => row.map((c) => {
+      if (c.blank) return `<div class="pdp-c blank"></div>`;
+      const u = c.u || 0;
+      const date = `${c._m}月${c.d}日`;
+      if (!u) return `<div class="pdp-c none" title="${date} 无保养安排"></div>`;
+      /* heavy 与对比视图同一把尺子（h >= HEAVY_HOURS），颜色不会两处不一致 */
+      return `<div class="pdp-c ${c.heavy ? 'busy' : 'easy'}"
+                   title="${date} ${u}台 ${c.h}小时">${u}</div>`;
+    }).join('')).join('');
+
+    const legend = PLAN_D_PREVIEW_TEXT.legend.map((l) =>
+      `<span class="pdp-lg"><i class="pdp-sq ${l.tone}"></i>${l.text}</span>`).join('');
+
+    return `
+        <div class="pd-preview">
+          <div class="pdp-cap">
+            <span>${PLAN_D_PREVIEW_TEXT.caption(PLAN_D_PREVIEW_WEEKS)}</span>
+            <span class="pdp-legend">${legend}</span>
+          </div>
+          <div class="pdp-grid">${head}${body}</div>
+          <div class="pdp-hint">${PLAN_D_PREVIEW_TEXT.hint}</div>
+        </div>`;
+  }
+
   /* 一张候选方案卡。无可行解时整卡压灰、按钮换成不可点的说明 ——
      保留卡片而不是直接隐藏：主管需要知道「我想要的那个方向为什么不行」，
      卡片消失了就只剩一个选项，反而像是算法只给了一种方案。 */
   function planDCardHtml(c) {
     const out = isCandidateOut(c.id);
-    const metrics = c.metrics.map((m) => `
+    const metrics = planDMetrics(c.id).map((m) => `
           <div class="pd-metric">
             <span class="pd-mk">${m.label}</span>
             <span class="pd-mv ${m.tone || ''}">${m.value}</span>
@@ -1554,10 +1642,13 @@
         <div class="pd-metrics">${metrics}</div>
 
         ${out
-    ? `<div class="pd-reason">
+    ? /* 无可行解的方案没有日历可预览 —— 它根本没排出来。
+         这里换成失败原因，不放一张空日历充数。 */
+    `<div class="pd-reason">
              <span class="pd-rk">${PLAN_D_TEXT.infeasibleKey}</span>${PLAN_D_INFEASIBLE[c.id]}
            </div>`
-    : `<ul class="pd-pros">
+    : `${planDPreviewHtml(c.id)}
+           <ul class="pd-pros">
              <li class="good">${c.good}</li>
              <li class="bad">${c.bad}</li>
            </ul>`}

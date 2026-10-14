@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<!-- 本文件由 build.js 自动生成（2026-10-14 02:46:41），已内联全部样式与脚本，
+<!-- 本文件由 build.js 自动生成（2026-10-14 03:12:58），已内联全部样式与脚本，
      可直接双击打开或发送给他人，无需任何外部文件与网络。
      请勿直接编辑此文件 —— 改动请在 css/ 与 js/ 下进行，然后重新执行 node build.js -->
 <meta charset="UTF-8" />
@@ -2539,6 +2539,73 @@ body.plan-c .cal-val.none {
   .pd-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* ---------- 候选方案的日历预览 ----------
+   热力图而不是数字表：两个方向的差别本质是分布形态，
+   「哪几天堆在一起、哪几天是空的」用色块一眼就能比出来。
+   配色复用对比视图那套三态变量，同一个概念不该在两个页面长得不一样。 */
+.pd-preview { margin-top: 2px; }
+
+.pdp-cap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 7px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.pdp-legend { display: inline-flex; gap: 10px; margin-left: auto; }
+.pdp-lg { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+
+.pdp-sq { width: 8px; height: 8px; border-radius: 1px; display: inline-block; }
+.pdp-sq.busy { background: var(--warn-text); }
+.pdp-sq.easy { background: var(--success-text); }
+.pdp-sq.none { background: var(--none-mark); }
+
+.pdp-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.pdp-h {
+  text-align: center;
+  font-size: 10px;
+  color: var(--text-4);
+  padding-bottom: 2px;
+}
+
+/* 方块里写当日台量。数字压到 10px 并用等宽，横向扫一行时不会因为
+   字宽不一而显得参差；0 台的日子不写数字，留空本身就是信息。 */
+.pdp-c {
+  height: 22px;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.pdp-c.blank { background: none; }
+
+/* 无保养安排用浅灰实心：和繁重、轻松并列成三种一眼可辨的状态 */
+.pdp-c.none { background: var(--none-bg); }
+
+/* 繁重 / 轻松沿用语义色，底色压淡、文字取深色，
+   22px 高的小方块上直接铺饱和色会糊掉里面的数字 */
+.pdp-c.easy { background: #e8f5e0; color: #3f8c15; }
+.pdp-c.busy { background: #ffe9cc; color: #c05f00; }
+
+.pdp-hint {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-4);
+  line-height: 1.6;
+}
+
 </style>
 </head>
 <body>
@@ -3278,20 +3345,71 @@ const PLAN_D_TEXT = {
   demoTag: '原型',
 };
 
-/* 两个候选方案。指标刻意选得能体现取舍：均衡方案的繁重日少但总工时高，
-   省工时方案反过来 —— 否则「选择」这件事就是假的，总有一个全面占优。 */
+/* ---------------- 两个候选方案各自的日历 ----------------
+   「均衡分布」就是算法原本给的那份方案（CAL_PLAN）。
+
+   「总工时更短」由 CAL_PLAN_BASE 确定性推导，不手写第二份日历 ——
+   同一套数据写两遍，改了一边忘了另一边就会对不上，而卡片上的指标
+   和日历预览都要从这份数据现算，一旦分叉就会自己打自己。
+
+   推导方式对应它的业务含义「同一项目的设备尽量排在同一天」：
+   把每周的活按相邻两个活跃日合并到前一天，再给工时打个折
+   —— 集中作业省掉重复路途与进场准备。
+   结果必然是「活跃天数更少、单日更重、总工时更低」，正是这个方向该有的形态；
+   台量一分不差地保留，因为要做的活没变，变的只是怎么排。 */
+const GROUPED_SAVING = 0.92;
+
+function buildGroupedPlan(baseWeeks) {
+  return baseWeeks.map((week) => {
+    const row = week.map((c) => Object.assign({}, c));
+    const active = [];
+    row.forEach((c, i) => { if ((c.u || 0) > 0) active.push(i); });
+
+    for (let k = 0; k + 1 < active.length; k += 2) {
+      const a = row[active[k]];
+      const b = row[active[k + 1]];
+      a.u = (a.u || 0) + (b.u || 0);
+      a.h = Math.round(((a.h || 0) + (b.h || 0)) * GROUPED_SAVING * 10) / 10;
+      b.u = 0;
+      b.h = 0;
+    }
+    /* 活跃日为奇数个时最后那天没有可合并的对象，只打折 */
+    if (active.length % 2) {
+      const last = row[active[active.length - 1]];
+      last.h = Math.round((last.h || 0) * GROUPED_SAVING * 10) / 10;
+    }
+
+    /* heavy 一律按全局阈值现算，不能沿用合并前的标记 ——
+       合并后工时变了，旧标记必然失真 */
+    row.forEach((c) => {
+      if ((c.u || 0) > 0 && c.h >= HEAVY_HOURS) c.heavy = true;
+      else delete c.heavy;
+    });
+    return row;
+  });
+}
+
+const CAL_PLAN_D = {
+  balanced: CAL_PLAN,
+  shorter: buildCalendar(buildGroupedPlan(CAL_PLAN_BASE), MAX_WEEKS),
+};
+
+/* 预览与「工作量分布」都只看前 4 周 —— 与日历默认档位一致，
+   选定方案后进对比页看到的就是同一段范围 */
+const PLAN_D_PREVIEW_WEEKS = 4;
+
+/* 两个候选方案。这里只留无法从日历推导的字段：
+     最大人均计划工时 —— 取决于人员编制，日历上算不出来
+     good / bad       —— 定性的取舍描述，刻意不写数字，
+                         数字只在指标表里出现一次，避免两处各写一遍后对不上
+   工作量分布、总计划工时、总保养台量全部由 app.js 从各自的日历现算。 */
 const PLAN_D_CANDIDATES = [
   {
     id: 'balanced',
     name: '工单均衡分布',
     sub: '把工单尽量摊平到每一天',
     recommend: true,
-    metrics: [
-      { label: '工作量分布', value: '轻松 10 天 / 繁重 4 天', tone: 'good' },
-      { label: '最大人均计划工时', value: '17.54 小时' },
-      { label: '总计划工时', value: '1862 小时' },
-      { label: '需调整日期的工单', value: '1404 张' },
-    ],
+    peakPerHead: '17.54 小时',
     good: '每天工作量接近，排班压力平稳，现场好执行',
     bad: '总工时偏高，同一项目的设备会分散到不同日期',
   },
@@ -3299,16 +3417,23 @@ const PLAN_D_CANDIDATES = [
     id: 'shorter',
     name: '总工时更短',
     sub: '压缩总工时与重复路途',
-    metrics: [
-      { label: '工作量分布', value: '轻松 5 天 / 繁重 9 天', tone: 'bad' },
-      { label: '最大人均计划工时', value: '23.10 小时' },
-      { label: '总计划工时', value: '1765 小时', tone: 'good' },
-      { label: '需调整日期的工单', value: '1512 张' },
-    ],
-    good: '总工时少 97 小时，同一项目的设备尽量排在同一天',
-    bad: '出现 9 个繁重日，单日人均工时最高 23.1 小时',
+    peakPerHead: '23.10 小时',
+    good: '同一项目的设备尽量排在同一天，省掉重复路途与进场准备',
+    bad: '活变得集中，单日负荷高，排班与现场执行的压力都更大',
   },
 ];
+
+/* 预览日历的图例。与对比视图同一套三态口径（繁重 / 轻松 / 无保养安排），
+   颜色也复用同一批变量 —— 同一个概念在两个页面长得不一样是没必要的学习成本。 */
+const PLAN_D_PREVIEW_TEXT = {
+  caption: (n) => `前 ${n} 周保养分布预览`,
+  hint: '方块为当日保养台量，选定方案后可查看完整 13 周并逐日调整',
+  legend: [
+    { tone: 'busy', text: '繁重' },
+    { tone: 'easy', text: '轻松' },
+    { tone: 'none', text: '无保养安排' },
+  ],
+};
 
 /* 无可行解时的原因。要具体到数字 —— 「无可行解」四个字对主管没有任何
    决策价值，他需要知道是哪一类约束把路堵死了。 */
@@ -5065,12 +5190,100 @@ const PROTO_SCREENS = [
     PLAN_D_CANDIDATES.every((c) => isCandidateOut(c.id));
   const planDCandidate = (id) => PLAN_D_CANDIDATES.find((c) => c.id === id);
 
+  /* 候选方案的指标，全部从它自己的日历现算。
+     不写死：卡片上的「轻松 N 天 / 繁重 N 天」与旁边的预览日历必须是
+     同一份数据的两种表达，各算一套迟早会出现「卡片说 10 天、
+     日历上数出来 9 格」这种自己打自己的情况。
+
+     分布只看前 4 周（与预览范围、日历默认档位一致）；
+     总量看满 13 周 —— 那才是「总计划工时」该有的口径。 */
+  function planDStat(id) {
+    const rows = CAL_PLAN_D[id];
+    const vis = rows.slice(0, PLAN_D_PREVIEW_WEEKS).flat().filter((x) => !x.blank);
+    const all = rows.flat().filter((x) => !x.blank);
+    return {
+      busy: vis.filter((x) => x.heavy).length,
+      easy: vis.filter((x) => !x.heavy && (x.u || 0) > 0).length,
+      units: all.reduce((s, x) => s + (x.u || 0), 0),
+      hours: Math.round(all.reduce((s, x) => s + (x.h || 0), 0)),
+    };
+  }
+
+  /* 指标的优劣着色要两卡互比后才能定 —— 单看一张卡无从判断谁更优，
+     而两张都着色等于都没着色。所以在这里一次算出两边再分配。 */
+  function planDMetrics(id) {
+    const me = planDStat(id);
+    const other = planDStat(id === 'balanced' ? 'shorter' : 'balanced');
+    const cand = planDCandidate(id);
+
+    const tone = (mine, theirs, better) => {
+      if (mine === theirs) return '';
+      const win = better === 'down' ? mine < theirs : mine > theirs;
+      return win ? 'good' : 'bad';
+    };
+
+    return [
+      {
+        /* 优劣按「轻松天数」比，不按繁重天数 —— 两个方向的繁重日恰好都是 2 天，
+           拿它比分不出高下；而同样的活摊在更多天上才是「均衡」的实质。
+           轻松 + 繁重 也正好等于有保养安排的天数，集中程度读者自己能看出来，
+           不必再单列一行。 */
+        label: '工作量分布',
+        value: `轻松 ${me.easy} 天 / 繁重 ${me.busy} 天`,
+        tone: tone(me.easy, other.easy, 'up'),
+      },
+      { label: '最大人均计划工时', value: cand.peakPerHead },
+      {
+        label: '总计划工时',
+        value: `${me.hours} 小时`,
+        tone: tone(me.hours, other.hours, 'down'),
+      },
+      /* 两个方向的台量必然相同（要做的活没变，变的只是怎么排）。
+         放进来不是为了比大小，而是把这件事说清楚 —— 否则看到总工时
+         有差会以为是漏排了设备。 */
+      { label: '总保养台量', value: `${me.units} 台` },
+    ];
+  }
+
+  /* 候选方案的日历预览。用色块热力图而不是数字表格：
+     两个方向的差别本质是「分布形态」，一眼看出哪几天堆在一起、
+     哪几天是空的，比四行数字直观得多 —— 这也是加这张预览的全部理由。 */
+  function planDPreviewHtml(id) {
+    const rows = CAL_PLAN_D[id].slice(0, PLAN_D_PREVIEW_WEEKS);
+
+    const head = WEEKDAYS.map((w) =>
+      `<div class="pdp-h">${w.replace('周', '')}</div>`).join('');
+
+    const body = rows.map((row) => row.map((c) => {
+      if (c.blank) return `<div class="pdp-c blank"></div>`;
+      const u = c.u || 0;
+      const date = `${c._m}月${c.d}日`;
+      if (!u) return `<div class="pdp-c none" title="${date} 无保养安排"></div>`;
+      /* heavy 与对比视图同一把尺子（h >= HEAVY_HOURS），颜色不会两处不一致 */
+      return `<div class="pdp-c ${c.heavy ? 'busy' : 'easy'}"
+                   title="${date} ${u}台 ${c.h}小时">${u}</div>`;
+    }).join('')).join('');
+
+    const legend = PLAN_D_PREVIEW_TEXT.legend.map((l) =>
+      `<span class="pdp-lg"><i class="pdp-sq ${l.tone}"></i>${l.text}</span>`).join('');
+
+    return `
+        <div class="pd-preview">
+          <div class="pdp-cap">
+            <span>${PLAN_D_PREVIEW_TEXT.caption(PLAN_D_PREVIEW_WEEKS)}</span>
+            <span class="pdp-legend">${legend}</span>
+          </div>
+          <div class="pdp-grid">${head}${body}</div>
+          <div class="pdp-hint">${PLAN_D_PREVIEW_TEXT.hint}</div>
+        </div>`;
+  }
+
   /* 一张候选方案卡。无可行解时整卡压灰、按钮换成不可点的说明 ——
      保留卡片而不是直接隐藏：主管需要知道「我想要的那个方向为什么不行」，
      卡片消失了就只剩一个选项，反而像是算法只给了一种方案。 */
   function planDCardHtml(c) {
     const out = isCandidateOut(c.id);
-    const metrics = c.metrics.map((m) => `
+    const metrics = planDMetrics(c.id).map((m) => `
           <div class="pd-metric">
             <span class="pd-mk">${m.label}</span>
             <span class="pd-mv ${m.tone || ''}">${m.value}</span>
@@ -5088,10 +5301,13 @@ const PROTO_SCREENS = [
         <div class="pd-metrics">${metrics}</div>
 
         ${out
-    ? `<div class="pd-reason">
+    ? /* 无可行解的方案没有日历可预览 —— 它根本没排出来。
+         这里换成失败原因，不放一张空日历充数。 */
+    `<div class="pd-reason">
              <span class="pd-rk">${PLAN_D_TEXT.infeasibleKey}</span>${PLAN_D_INFEASIBLE[c.id]}
            </div>`
-    : `<ul class="pd-pros">
+    : `${planDPreviewHtml(c.id)}
+           <ul class="pd-pros">
              <li class="good">${c.good}</li>
              <li class="bad">${c.bad}</li>
            </ul>`}

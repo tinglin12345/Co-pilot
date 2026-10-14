@@ -2321,40 +2321,98 @@ body.plan-c .cal-val.none {
   line-height: 1.6;
 }
 
-/* ===================== 工作组级编排条件 =====================
-   条件页此前只有项目级（表格行）和设备级（展开行）两层可编辑，
-   工作组这一层在数据上已经存在（整页按工作组取数）却没有界面。
-   这个区块补上那一层，同时交代「这一页在给哪个工作组设条件」。
+/* ===================== 编排条件分区 =====================
+   页面按「作用范围」分成两段：工作组统一 → 逐项目/逐设备。
+   原先三类东西（整组设置 / 逐项目设置 / 表格筛选）平铺在一个竖列里，
+   层级靠读者自己推断，「是否托管」还和「批量编辑」并排在表格工具条上。
 
-   做成浅色卡片而不是又一条 filterbar：它是设置项不是查询条件，
-   视觉上要和下面的项目查询区分开，否则会被当成筛选器。 */
-.group-cond {
-  margin-bottom: 14px;
-  padding: 12px 16px 11px;
+   两段都用带标题的区块，层级因此是显式的；
+   第二段里筛选降级为表格的附属工具条，不再是设置项的同级邻居。 */
+.cond-sec {
+  margin-bottom: 16px;
   border: 1px solid var(--border-2);
   border-radius: var(--radius-lg);
-  background: var(--bg-head);
+  background: #fff;
+  overflow: hidden;
 }
 
-.gc-head {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-
-.gc-title { font-size: 14px; font-weight: 600; color: var(--text); }
-
-/* 工作组名称与人数：这一页的作用域，弱化但必须在 */
-.gc-scope { font-size: 12px; color: var(--text-3); }
-
-.gc-body {
+.cs-head {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 10px;
   flex-wrap: wrap;
+  padding: 11px 16px;
+  background: var(--bg-head);
+  border-bottom: 1px solid var(--border);
 }
+
+.cs-head .grow { flex: 1 1 auto; }
+
+.cs-title { font-size: 14px; font-weight: 600; color: var(--text); }
+
+/* 副标题就是归类依据本身：「对整个工作组统一生效」/「逐项目设置」。
+   不写出来，用户得靠字段名猜这一段管多大范围。 */
+.cs-sub { font-size: 12px; color: var(--text-3); }
+
+/* 作用域：工作组与编排周期。这一页此前从不说自己作用在哪 */
+.cs-scope { display: inline-flex; gap: 14px; flex-wrap: wrap; }
+.csc-i { font-size: 12px; color: var(--text-3); white-space: nowrap; }
+
+.cs-body {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  flex-wrap: wrap;
+  padding: 14px 16px 13px;
+}
+
+/* 一条条件项：键 + 控件（+ 推导值）。
+   键用固定的弱色标签，和表格里的列头是同一种视觉角色。 */
+.cond-item { display: inline-flex; align-items: center; gap: 10px; }
+
+.ci-k {
+  font-size: 14px;
+  color: var(--text);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cs-note {
+  padding: 0 16px 12px;
+  font-size: 12px;
+  color: var(--text-4);
+  line-height: 1.6;
+}
+
+/* 筛选条：挂在表格之上、区块之内，视觉重量明显低于上面的条件项 ——
+   它不参与提交，只决定表格显示哪些行。 */
+.cs-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: #fff;
+}
+
+.csf-k {
+  font-size: 12px;
+  color: var(--text-3);
+  padding: 1px 7px;
+  border: 1px solid var(--border-2);
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.csf-n { font-size: 12px; color: var(--text-4); }
+
+.cs-filter .field-label { font-size: 13px; color: var(--text-2); }
+
+/* 区块内的表格自己已有边框感，去掉外层圆角造成的重复描边 */
+.cond-sec .table { margin: 0; }
 
 /* 推导出来的承载量。用分隔线和输入项断开 ——
    它不是另一个可填字段，是上一个字段的结果，不能长得像输入项。 */
@@ -2380,7 +2438,7 @@ body.plan-c .cal-val.none {
 .gcd-u { font-size: 13px; color: var(--text-2); }
 .gcd-note { font-size: 12px; color: var(--text-4); }
 
-.gc-note { margin-top: 9px; font-size: 12px; color: var(--text-4); line-height: 1.6; }
+
 
 @media (max-width: 1100px) {
   .gc-derived { padding-left: 0; border-left: 0; }

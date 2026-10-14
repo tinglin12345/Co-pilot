@@ -1294,71 +1294,92 @@
         <span class="ax" data-close-alert>✕</span>
       </div>
 
-      <!-- 工作组级条件放在项目查询与项目表格之前：先交代「在给哪个工作组设条件、
-           这一组整体的上限是多少」，再往下看逐项目、逐设备的条件。
-           顺带补上这一页此前的缺陷 —— 它从不显示自己作用于哪个工作组。 -->
-      <div class="group-cond">
-        <div class="gc-head">
-          <span class="gc-title">${GROUP_CONDITION.title}</span>
-          <span class="gc-scope">${WORKGROUP.label} · ${WORKGROUP.size} 人</span>
-        </div>
-        <div class="gc-body">
-          <div class="field">
-            <span class="field-label">${GROUP_CONDITION.label}</span>
-            ${numInput(GROUP_CONDITION.value, GROUP_CONDITION.unit, 'groupMaxPerHead')}
-            ${help(GROUP_CONDITION.tip)}
-          </div>
-          <span class="gc-derived">
-            <span class="gcd-k">${GROUP_CONDITION.capacityKey}</span>
-            <b id="gcCapacity">${GROUP_CONDITION.value * WORKGROUP.size}</b>
-            <span class="gcd-u">台</span>
-            <span class="gcd-note">${GROUP_CONDITION.capacityNote(WORKGROUP.size)}</span>
+      <!-- 这一页原先把三类不同性质的东西平铺在一个竖列里：
+             整组统一的设置（是否托管）、逐项目的设置（表格）、以及只影响
+             表格显示的筛选（项目信息 / 动态保养间隔）。
+           其中「是否托管」还和「批量编辑」并排挂在表格工具条上，看起来像
+           表格的显示选项，实际它是整组统一的自动化开关。
+
+           现在按「作用范围」归成两段：整组统一 → 逐项目/逐设备。
+           筛选不是条件，降级为表格自己的附属工具条并显式标注，
+           因为「项目信息」「动态保养间隔」这两个名字在筛选区和下面的
+           表格里各出现一次、形态还都是输入控件，不标明谁是过滤器会混。 -->
+
+      <!-- ① 整组统一生效的条件 -->
+      <section class="cond-sec">
+        <div class="cs-head">
+          <span class="cs-title">${COND_SECTIONS.group.title}</span>
+          <span class="cs-sub">${COND_SECTIONS.group.sub}</span>
+          <div class="grow"></div>
+          <span class="cs-scope">
+            <span class="csc-i">${WORKGROUP.label} · ${WORKGROUP.size} 人</span>
+            <span class="csc-i">编排周期 ${rangeLabel(CAL_PLAN)}</span>
           </span>
         </div>
-        <div class="gc-note">${GROUP_CONDITION.note}</div>
-      </div>
-
-      <div class="filterbar">
-        <div class="field">
-          <span class="field-label">项目信息</span>
-          ${dd('', [], 'control-w-xl', '请输入项目名称或项目编号')}
+        <div class="cs-body">
+          <div class="cond-item">
+            <span class="ci-k">是否托管${help(CONDITION_TIP)}</span>
+            <span class="switch" data-switch></span>
+          </div>
+          <div class="cond-item">
+            <span class="ci-k">${GROUP_CONDITION.label}${help(GROUP_CONDITION.tip)}</span>
+            ${numInput(GROUP_CONDITION.value, GROUP_CONDITION.unit, 'groupMaxPerHead')}
+            <span class="gc-derived">
+              <span class="gcd-k">${GROUP_CONDITION.capacityKey}</span>
+              <b id="gcCapacity">${GROUP_CONDITION.value * WORKGROUP.size}</b>
+              <span class="gcd-u">台</span>
+              <span class="gcd-note">${GROUP_CONDITION.capacityNote(WORKGROUP.size)}</span>
+            </span>
+          </div>
         </div>
-        <div class="field">
-          <span class="field-label">动态保养间隔</span>
-          ${dd('', ['是', '否'], 'control-w-md', '请选择')}
-        </div>
-        <div class="grow"></div>
-        <button class="btn">重 置</button>
-        <button class="btn btn-primary">查 询</button>
-      </div>
+        <div class="cs-note">${GROUP_CONDITION.note}</div>
+      </section>
 
-      <div class="toolbar">
-        <div class="field">
-          <span class="field-label">是否托管</span>
-          <span class="switch" data-switch></span>
-          ${help(CONDITION_TIP)}
+      <!-- ② 逐项目 / 逐设备的条件 -->
+      <section class="cond-sec">
+        <div class="cs-head">
+          <span class="cs-title">${COND_SECTIONS.project.title}</span>
+          <span class="cs-sub">${COND_SECTIONS.project.sub}</span>
+          <div class="grow"></div>
+          <button class="btn btn-primary btn-sm">批量编辑</button>
         </div>
-        <div class="grow"></div>
-        <button class="btn btn-primary">批量编辑</button>
-      </div>
 
-      <table class="table" id="condTable">
-        <thead>
-          <tr>
-            <th class="col-narrow"></th>
-            <th class="col-narrow"><span class="checkbox"><span class="check-box"></span></span></th>
-            <th>项目信息</th>
-            <th>项目编号</th>
-            <th>项目地址</th>
-            <th>设备台数</th>
-            <th class="col-nowrap">
-              <span class="th-help">${MAX_DAILY_UNITS.label}${help(MAX_DAILY_UNITS.tip)}</span>
-            </th>
-            <th class="col-actions">操作</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
+        <!-- 筛选：只影响下面表格看到哪些行，不参与提交。
+             显式打上「筛选」标签，与上面的条件项区分开。 -->
+        <div class="cs-filter">
+          <span class="csf-k">${COND_SECTIONS.filterKey}</span>
+          <div class="field">
+            <span class="field-label">项目信息</span>
+            ${dd('', [], 'control-w-lg', '请输入项目名称或项目编号')}
+          </div>
+          <div class="field">
+            <span class="field-label">动态保养间隔</span>
+            ${dd('', ['是', '否'], 'control-w-sm', '请选择')}
+          </div>
+          <button class="btn btn-sm">重 置</button>
+          <button class="btn btn-sm btn-primary">查 询</button>
+          <div class="grow"></div>
+          <span class="csf-n">${COND_SECTIONS.filterNote}</span>
+        </div>
+
+        <table class="table" id="condTable">
+          <thead>
+            <tr>
+              <th class="col-narrow"></th>
+              <th class="col-narrow"><span class="checkbox"><span class="check-box"></span></span></th>
+              <th>项目信息</th>
+              <th>项目编号</th>
+              <th>项目地址</th>
+              <th>设备台数</th>
+              <th class="col-nowrap">
+                <span class="th-help">${MAX_DAILY_UNITS.label}${help(MAX_DAILY_UNITS.tip)}</span>
+              </th>
+              <th class="col-actions">操作</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </section>
 
       <div class="modal-foot center" style="padding-top:18px">
         <button class="btn" data-go="smart">返 回</button>

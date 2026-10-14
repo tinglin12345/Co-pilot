@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<!-- 本文件由 build.js 自动生成（2026-10-14 05:36:00），已内联全部样式与脚本，
+<!-- 本文件由 build.js 自动生成（2026-10-14 05:50:03），已内联全部样式与脚本，
      可直接双击打开或发送给他人，无需任何外部文件与网络。
      请勿直接编辑此文件 —— 改动请在 css/ 与 js/ 下进行，然后重新执行 node build.js -->
 <meta charset="UTF-8" />
@@ -2683,40 +2683,98 @@ body.plan-c .cal-val.none {
   line-height: 1.6;
 }
 
-/* ===================== 工作组级编排条件 =====================
-   条件页此前只有项目级（表格行）和设备级（展开行）两层可编辑，
-   工作组这一层在数据上已经存在（整页按工作组取数）却没有界面。
-   这个区块补上那一层，同时交代「这一页在给哪个工作组设条件」。
+/* ===================== 编排条件分区 =====================
+   页面按「作用范围」分成两段：工作组统一 → 逐项目/逐设备。
+   原先三类东西（整组设置 / 逐项目设置 / 表格筛选）平铺在一个竖列里，
+   层级靠读者自己推断，「是否托管」还和「批量编辑」并排在表格工具条上。
 
-   做成浅色卡片而不是又一条 filterbar：它是设置项不是查询条件，
-   视觉上要和下面的项目查询区分开，否则会被当成筛选器。 */
-.group-cond {
-  margin-bottom: 14px;
-  padding: 12px 16px 11px;
+   两段都用带标题的区块，层级因此是显式的；
+   第二段里筛选降级为表格的附属工具条，不再是设置项的同级邻居。 */
+.cond-sec {
+  margin-bottom: 16px;
   border: 1px solid var(--border-2);
   border-radius: var(--radius-lg);
-  background: var(--bg-head);
+  background: #fff;
+  overflow: hidden;
 }
 
-.gc-head {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-
-.gc-title { font-size: 14px; font-weight: 600; color: var(--text); }
-
-/* 工作组名称与人数：这一页的作用域，弱化但必须在 */
-.gc-scope { font-size: 12px; color: var(--text-3); }
-
-.gc-body {
+.cs-head {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 10px;
   flex-wrap: wrap;
+  padding: 11px 16px;
+  background: var(--bg-head);
+  border-bottom: 1px solid var(--border);
 }
+
+.cs-head .grow { flex: 1 1 auto; }
+
+.cs-title { font-size: 14px; font-weight: 600; color: var(--text); }
+
+/* 副标题就是归类依据本身：「对整个工作组统一生效」/「逐项目设置」。
+   不写出来，用户得靠字段名猜这一段管多大范围。 */
+.cs-sub { font-size: 12px; color: var(--text-3); }
+
+/* 作用域：工作组与编排周期。这一页此前从不说自己作用在哪 */
+.cs-scope { display: inline-flex; gap: 14px; flex-wrap: wrap; }
+.csc-i { font-size: 12px; color: var(--text-3); white-space: nowrap; }
+
+.cs-body {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  flex-wrap: wrap;
+  padding: 14px 16px 13px;
+}
+
+/* 一条条件项：键 + 控件（+ 推导值）。
+   键用固定的弱色标签，和表格里的列头是同一种视觉角色。 */
+.cond-item { display: inline-flex; align-items: center; gap: 10px; }
+
+.ci-k {
+  font-size: 14px;
+  color: var(--text);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cs-note {
+  padding: 0 16px 12px;
+  font-size: 12px;
+  color: var(--text-4);
+  line-height: 1.6;
+}
+
+/* 筛选条：挂在表格之上、区块之内，视觉重量明显低于上面的条件项 ——
+   它不参与提交，只决定表格显示哪些行。 */
+.cs-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: #fff;
+}
+
+.csf-k {
+  font-size: 12px;
+  color: var(--text-3);
+  padding: 1px 7px;
+  border: 1px solid var(--border-2);
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.csf-n { font-size: 12px; color: var(--text-4); }
+
+.cs-filter .field-label { font-size: 13px; color: var(--text-2); }
+
+/* 区块内的表格自己已有边框感，去掉外层圆角造成的重复描边 */
+.cond-sec .table { margin: 0; }
 
 /* 推导出来的承载量。用分隔线和输入项断开 ——
    它不是另一个可填字段，是上一个字段的结果，不能长得像输入项。 */
@@ -2742,7 +2800,7 @@ body.plan-c .cal-val.none {
 .gcd-u { font-size: 13px; color: var(--text-2); }
 .gcd-note { font-size: 12px; color: var(--text-4); }
 
-.gc-note { margin-top: 9px; font-size: 12px; color: var(--text-4); line-height: 1.6; }
+
 
 @media (max-width: 1100px) {
   .gc-derived { padding-left: 0; border-left: 0; }
@@ -3246,6 +3304,27 @@ const MAX_DAILY_UNITS = {
      项目级 —— 这个项目一天最多接多少台（现场 / 客户侧承载）
      工作组级 —— 这组人一天每人最多干多少台（人力侧承载）
    两者同时生效，取更严格者。 */
+/* 条件页的两段分区。
+   归类依据是「这条设置作用在多大范围上」，而不是它长什么样 ——
+   页面原先按控件形态排布（输入框归输入框、表格归表格），
+   结果整组统一的「是否托管」和表格的「批量编辑」挤在同一条工具条上。
+
+   筛选单独拎出来并标注：它不是条件，不参与提交，只决定下面表格显示哪些行。
+   「项目信息」「动态保养间隔」这两个名字在筛选区和表格里各出现一次、
+   形态还都是输入控件，不标明谁是过滤器一定会被当成设置项去改。 */
+const COND_SECTIONS = {
+  group: {
+    title: '工作组条件',
+    sub: '对整个工作组统一生效',
+  },
+  project: {
+    title: '项目与设备条件',
+    sub: '逐项目设置，展开可设到每台设备',
+  },
+  filterKey: '筛选',
+  filterNote: '仅影响下方列表的显示范围，不作为编排条件提交',
+};
+
 const GROUP_CONDITION = {
   title: '工作组编排条件',
   label: '单日人均最大台量',
@@ -5147,71 +5226,92 @@ const PROTO_SCREENS = [
         <span class="ax" data-close-alert>✕</span>
       </div>
 
-      <!-- 工作组级条件放在项目查询与项目表格之前：先交代「在给哪个工作组设条件、
-           这一组整体的上限是多少」，再往下看逐项目、逐设备的条件。
-           顺带补上这一页此前的缺陷 —— 它从不显示自己作用于哪个工作组。 -->
-      <div class="group-cond">
-        <div class="gc-head">
-          <span class="gc-title">${GROUP_CONDITION.title}</span>
-          <span class="gc-scope">${WORKGROUP.label} · ${WORKGROUP.size} 人</span>
-        </div>
-        <div class="gc-body">
-          <div class="field">
-            <span class="field-label">${GROUP_CONDITION.label}</span>
-            ${numInput(GROUP_CONDITION.value, GROUP_CONDITION.unit, 'groupMaxPerHead')}
-            ${help(GROUP_CONDITION.tip)}
-          </div>
-          <span class="gc-derived">
-            <span class="gcd-k">${GROUP_CONDITION.capacityKey}</span>
-            <b id="gcCapacity">${GROUP_CONDITION.value * WORKGROUP.size}</b>
-            <span class="gcd-u">台</span>
-            <span class="gcd-note">${GROUP_CONDITION.capacityNote(WORKGROUP.size)}</span>
+      <!-- 这一页原先把三类不同性质的东西平铺在一个竖列里：
+             整组统一的设置（是否托管）、逐项目的设置（表格）、以及只影响
+             表格显示的筛选（项目信息 / 动态保养间隔）。
+           其中「是否托管」还和「批量编辑」并排挂在表格工具条上，看起来像
+           表格的显示选项，实际它是整组统一的自动化开关。
+
+           现在按「作用范围」归成两段：整组统一 → 逐项目/逐设备。
+           筛选不是条件，降级为表格自己的附属工具条并显式标注，
+           因为「项目信息」「动态保养间隔」这两个名字在筛选区和下面的
+           表格里各出现一次、形态还都是输入控件，不标明谁是过滤器会混。 -->
+
+      <!-- ① 整组统一生效的条件 -->
+      <section class="cond-sec">
+        <div class="cs-head">
+          <span class="cs-title">${COND_SECTIONS.group.title}</span>
+          <span class="cs-sub">${COND_SECTIONS.group.sub}</span>
+          <div class="grow"></div>
+          <span class="cs-scope">
+            <span class="csc-i">${WORKGROUP.label} · ${WORKGROUP.size} 人</span>
+            <span class="csc-i">编排周期 ${rangeLabel(CAL_PLAN)}</span>
           </span>
         </div>
-        <div class="gc-note">${GROUP_CONDITION.note}</div>
-      </div>
-
-      <div class="filterbar">
-        <div class="field">
-          <span class="field-label">项目信息</span>
-          ${dd('', [], 'control-w-xl', '请输入项目名称或项目编号')}
+        <div class="cs-body">
+          <div class="cond-item">
+            <span class="ci-k">是否托管${help(CONDITION_TIP)}</span>
+            <span class="switch" data-switch></span>
+          </div>
+          <div class="cond-item">
+            <span class="ci-k">${GROUP_CONDITION.label}${help(GROUP_CONDITION.tip)}</span>
+            ${numInput(GROUP_CONDITION.value, GROUP_CONDITION.unit, 'groupMaxPerHead')}
+            <span class="gc-derived">
+              <span class="gcd-k">${GROUP_CONDITION.capacityKey}</span>
+              <b id="gcCapacity">${GROUP_CONDITION.value * WORKGROUP.size}</b>
+              <span class="gcd-u">台</span>
+              <span class="gcd-note">${GROUP_CONDITION.capacityNote(WORKGROUP.size)}</span>
+            </span>
+          </div>
         </div>
-        <div class="field">
-          <span class="field-label">动态保养间隔</span>
-          ${dd('', ['是', '否'], 'control-w-md', '请选择')}
-        </div>
-        <div class="grow"></div>
-        <button class="btn">重 置</button>
-        <button class="btn btn-primary">查 询</button>
-      </div>
+        <div class="cs-note">${GROUP_CONDITION.note}</div>
+      </section>
 
-      <div class="toolbar">
-        <div class="field">
-          <span class="field-label">是否托管</span>
-          <span class="switch" data-switch></span>
-          ${help(CONDITION_TIP)}
+      <!-- ② 逐项目 / 逐设备的条件 -->
+      <section class="cond-sec">
+        <div class="cs-head">
+          <span class="cs-title">${COND_SECTIONS.project.title}</span>
+          <span class="cs-sub">${COND_SECTIONS.project.sub}</span>
+          <div class="grow"></div>
+          <button class="btn btn-primary btn-sm">批量编辑</button>
         </div>
-        <div class="grow"></div>
-        <button class="btn btn-primary">批量编辑</button>
-      </div>
 
-      <table class="table" id="condTable">
-        <thead>
-          <tr>
-            <th class="col-narrow"></th>
-            <th class="col-narrow"><span class="checkbox"><span class="check-box"></span></span></th>
-            <th>项目信息</th>
-            <th>项目编号</th>
-            <th>项目地址</th>
-            <th>设备台数</th>
-            <th class="col-nowrap">
-              <span class="th-help">${MAX_DAILY_UNITS.label}${help(MAX_DAILY_UNITS.tip)}</span>
-            </th>
-            <th class="col-actions">操作</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
+        <!-- 筛选：只影响下面表格看到哪些行，不参与提交。
+             显式打上「筛选」标签，与上面的条件项区分开。 -->
+        <div class="cs-filter">
+          <span class="csf-k">${COND_SECTIONS.filterKey}</span>
+          <div class="field">
+            <span class="field-label">项目信息</span>
+            ${dd('', [], 'control-w-lg', '请输入项目名称或项目编号')}
+          </div>
+          <div class="field">
+            <span class="field-label">动态保养间隔</span>
+            ${dd('', ['是', '否'], 'control-w-sm', '请选择')}
+          </div>
+          <button class="btn btn-sm">重 置</button>
+          <button class="btn btn-sm btn-primary">查 询</button>
+          <div class="grow"></div>
+          <span class="csf-n">${COND_SECTIONS.filterNote}</span>
+        </div>
+
+        <table class="table" id="condTable">
+          <thead>
+            <tr>
+              <th class="col-narrow"></th>
+              <th class="col-narrow"><span class="checkbox"><span class="check-box"></span></span></th>
+              <th>项目信息</th>
+              <th>项目编号</th>
+              <th>项目地址</th>
+              <th>设备台数</th>
+              <th class="col-nowrap">
+                <span class="th-help">${MAX_DAILY_UNITS.label}${help(MAX_DAILY_UNITS.tip)}</span>
+              </th>
+              <th class="col-actions">操作</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </section>
 
       <div class="modal-foot center" style="padding-top:18px">
         <button class="btn" data-go="smart">返 回</button>

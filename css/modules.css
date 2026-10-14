@@ -2339,6 +2339,20 @@ body.plan-c .cal-val.none {
    等于重复一遍已知信息。
    区分感靠弱化小标签（.ctb-tag）而不是卡片边框/背景块，
    纵向只占一行的高度。 */
+/* 模块标题：「工作组设置」/「项目条件设置」。
+   比 .page-title（15px，整页级）弱一档，比 .ctb-tag（11px 描边，
+   工具条内部的分类徽记）重一档——它要挑得起「这一整块是什么」的责任，
+   但不能和页面标题抢视觉重量。上边距给足，和上一个模块的内容拉开，
+   下边距收紧，和自己管辖的工具条贴近，让「标题归属哪一块」没有歧义。 */
+.cond-module-title {
+  margin: 20px 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.cond-module-title:first-of-type { margin-top: 4px; }
+
 .cond-toolbar {
   display: flex;
   align-items: center;

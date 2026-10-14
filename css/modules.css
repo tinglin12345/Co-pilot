@@ -1178,10 +1178,11 @@
   flex-wrap: wrap;
   gap: 8px;
   /* 左侧留白给固定在屏幕左下角的原型浮钮，避免压住页脚左对齐的提示文字。
-     抽屉固定 left:286px；浮钮现在是三个（界面导航 / 方案B / 方案C），
-     右边缘约 474px → 相对抽屉 188px，留 200px 刚好有 12px 余量。
-     注意：这个值跟着浮钮个数走，再加按钮就得重新量。 */
-  padding: 12px 20px 12px 200px;
+     这个值由 syncProtoUi() 按浮钮条的实测宽度写进 --foot-pad ——
+     原先是手工量出来的 200px，每加一个浮钮都得重新量一次，
+     而浮钮还能被 PROTO_UI 单独隐藏，手工值必然会过期。
+     兜底 200px 只在脚本没跑起来时生效。 */
+  padding: 12px 20px 12px var(--foot-pad, 200px);
   border-top: 1px solid var(--border);
   background: #fff;
 }
@@ -1809,10 +1810,11 @@ body.hide-proto-nav #protoPanel { display: none; }
 
 body.hide-mode-b #modeToggle { display: none; }
 body.hide-mode-c #modeToggleC { display: none; }
+body.hide-mode-d #modeToggleD { display: none; }
 
-/* 三个浮钮全藏起来时，连那个固定定位的空容器一起收掉，
+/* 浮钮全藏起来时，连那个固定定位的空容器一起收掉，
    否则左下角会留一个看不见但仍在布局里的壳 */
-body.hide-proto-nav.hide-mode-b.hide-mode-c .proto { display: none; }
+body.hide-proto-nav.hide-mode-b.hide-mode-c.hide-mode-d .proto { display: none; }
 
 /* 停靠在内容区左下角，避免压住侧栏底部的收起按钮 */
 .proto {
@@ -1938,4 +1940,239 @@ body.plan-c .cmp-row.none,
 body.plan-c .cal-val.none {
   background: var(--none-bg);
   color: var(--text-2);
+}
+
+/* ===================== 方案 D：选择算法方案 =====================
+   生成完成后先摆出两个优化方向让主管选。两张卡并排，指标逐行对齐 ——
+   并排是为了让同名指标能横向比对，这是「选择」唯一真正需要的信息结构。 */
+
+.pd-lead {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+
+.pd-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.pd-card {
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px 14px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 可选的卡片 hover 时给主色描边，呼应「这是个可点的选项」 */
+.pd-card:not(.out):hover { border-color: var(--primary); box-shadow: var(--shadow-1); }
+
+/* 无可行解：整卡压灰但不隐藏 —— 主管需要看到「我想要的方向为什么不行」。
+   卡片直接消失的话只剩一个选项，反而像算法只给了一种方案。 */
+.pd-card.out { background: var(--bg-head); border-style: dashed; }
+.pd-card.out .pd-name,
+.pd-card.out .pd-mv { color: var(--text-3); }
+.pd-card.out .pd-sub,
+.pd-card.out .pd-mk { color: var(--text-4); }
+
+.pd-card-head { display: flex; align-items: center; gap: 8px; }
+
+.pd-name { font-size: 16px; font-weight: 600; color: var(--text); }
+
+.pd-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: var(--radius);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.pd-badge.rec {
+  background: var(--primary-bg);
+  border: 1px solid var(--primary-border);
+  color: var(--primary-active);
+}
+
+.pd-badge.out {
+  background: #fff2f0;
+  border: 1px solid #ffccc7;
+  color: var(--danger);
+}
+
+.pd-sub { font-size: 12px; color: var(--text-3); margin-top: -4px; }
+
+/* 指标表。key 定宽、value 右对齐，两张卡横向扫一眼就能比出差异 */
+.pd-metrics {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 4px 0;
+}
+
+.pd-metric {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 13px;
+}
+
+.pd-mk { flex: 1 1 auto; color: var(--text-3); }
+
+.pd-mv {
+  flex: 0 0 auto;
+  color: var(--text);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 指标上的优劣只给这一项真正占优 / 吃亏的那张卡着色 ——
+   两张都上色就等于没上色 */
+.pd-mv.good { color: var(--success-text); }
+.pd-mv.bad { color: var(--warn-text); }
+
+/* 取舍说明：一条优点一条代价，强制成对出现。
+   只写优点的话两张卡会读起来都像推荐项，选择就没有依据了。 */
+.pd-pros { margin: 0; padding: 0; list-style: none; font-size: 12px; line-height: 1.7; }
+
+.pd-pros li { position: relative; padding-left: 16px; color: var(--text-2); }
+
+.pd-pros li::before {
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+}
+
+.pd-pros li.good::before { content: '+'; color: var(--success-text); }
+.pd-pros li.bad::before { content: '−'; color: var(--warn-text); }
+
+/* 无可行解的原因。具体到数字 —— 「无可行解」四个字对决策没有价值 */
+.pd-reason {
+  padding: 9px 11px;
+  border-radius: var(--radius-lg);
+  background: #fff2f0;
+  border: 1px solid #ffccc7;
+  border-left: 3px solid var(--danger);
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.7;
+}
+
+.pd-reason .pd-rk { color: var(--danger); font-weight: 600; margin-right: 8px; }
+
+.pd-card-foot { display: flex; }
+.pd-card-foot .btn { flex: 1 1 auto; justify-content: center; }
+
+/* 演示场景切换器。挂了「原型」角标，避免被误认成真实功能 */
+.pd-demo { display: inline-flex; align-items: center; gap: 8px; font-weight: 400; }
+
+.pd-demo-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: var(--radius);
+  background: #46536b;
+  color: #fff;
+  font-size: 10px;
+}
+
+.pd-demo-key { font-size: 12px; color: var(--text-3); }
+
+/* 标题栏上的「当前选的是哪个方向」标记。调整到一半时必须随时可确认 */
+.tag-pd {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius);
+  background: var(--primary-bg);
+  border: 1px solid var(--primary-border);
+  color: var(--primary-active);
+  font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+/* ---------- 保底方案横幅 ----------
+   用警示黄而不是失败红：这不是一次失败，用户拿到的是一份能执行的计划，
+   只是打了折。红色会让人以为什么都没生成出来。 */
+.pd-fallback {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  border-radius: var(--radius-lg);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+}
+
+.pdf-icon { flex: 0 0 auto; color: var(--warn-text); }
+
+.pdf-main { flex: 1 1 auto; min-width: 0; }
+
+.pdf-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.pdf-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: var(--radius);
+  background: var(--warn-text);
+  color: #fff;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.pdf-key {
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--warn-text);
+}
+
+/* 逐条列出「放弃了什么」+「为什么不得不放弃」。
+   只列条目不给理由，用户没法判断这个折扣能不能接受。 */
+.pdf-list { margin: 6px 0 0; padding: 0; list-style: none; }
+
+.pdf-list li {
+  position: relative;
+  padding: 3px 0 3px 14px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.pdf-list li::before {
+  content: '';
+  position: absolute;
+  left: 2px; top: 11px;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--warn-text);
+}
+
+.pdw-name { color: var(--text); font-weight: 500; }
+.pdw-name::after { content: '—'; margin: 0 7px; color: var(--text-4); font-weight: 400; }
+.pdw-why { color: var(--text-2); }
+
+.pdf-kept { margin-top: 9px; font-size: 12px; color: var(--text-3); }
+
+@media (max-width: 1100px) {
+  .pd-grid { grid-template-columns: minmax(0, 1fr); }
 }

@@ -84,10 +84,18 @@
     manualMoves.flatMap((m) => [m.from, m.to])).size;
   const isB = () => planMode === 'B';
   const isC = () => planMode === 'C';
+  const isD = () => planMode === 'D';
+  /* 方案 D 在方案 C 的交互之上只多一道前置步骤：生成完成后先让主管在
+     两个候选算法方案之间选一个，选完之后的查看 / 调整 / 应用完全走 C 那一套。
+
+     因此「按 C 的样子渲染」统一用 isCFlow()（C 或 D 都成立），
+     只有模式浮钮的高亮与切换逻辑才用严格的 isC() / isD()。
+     两者混用会出现「切到 D 却按方案 A 渲染」或「D 模式下 C 的浮钮亮着」这类错位。 */
+  const isCFlow = () => isC() || isD();
   /* B 与 C 共用同一套串行流程骨架（抽屉、对比日历、人工调整数据），
      只在「怎么进入手动调整」和图例/配色上分叉。
      凡是「只要不是方案 A 就该这样」的判断都用 isFlow()，避免加了 C 之后漏改。 */
-  const isFlow = () => isB() || isC();
+  const isFlow = () => isB() || isCFlow();
 
   const app = $('#app');
   const viewMount = $('#viewMount');
@@ -617,7 +625,7 @@
     /* 方案 C 的图例去掉「算法调整（共 N 天：N 天清空、N 天新增、N 天改量）」——
        那串明细太长，把整排图例挤成一句话；同样的涨跌顶部 KPI 已经说过一遍，
        而日历上每格「当前计划 / 新方案」两行并排，改了什么本来就一眼能看出来。 */
-    if (isC()) {
+    if (isCFlow()) {
       /* 图例只留三种负载状态。「人工调整（N 天）」也去掉了 ——
          日历上被改过的日子本来就有三重标记：紫色左边条、右上角「调整」角标、
          下面一行紫字「已手动调整至 X月X日」，角标和文案都是直白的中文，
@@ -661,7 +669,7 @@
          方案 B —— 只有进入 tune 模式才可点
          方案 C —— 对比页（它只有这一页）常态可点
        mode 为 undefined 时（方案 A 的对比抽屉）必须只读，所以显式比对而非取反。 */
-    const tunable = mode === 'tune' || (isC() && mode === 'compare');
+    const tunable = mode === 'tune' || (isCFlow() && mode === 'compare');
 
     const cells = rows.map((row, ri) => row.map((c, ci) => {
       if (c.blank) {
@@ -889,8 +897,8 @@
            只属于正在调整的那个页面，应用完就不该再挂在这儿。 -->
       <div id="smartCalWrap">${calHtml(CAL_CURRENT, {
         id: 'calCurrent', greenEasy: true,
-        merged: isC(), enterable: isC(),
-        cls: isC() ? 'enterable' : '',
+        merged: isCFlow(), enterable: isCFlow(),
+        cls: isCFlow() ? 'enterable' : '',
       })}</div>
     </div>`;
   }
@@ -1189,7 +1197,7 @@
        方案 C 下已由上面的 data-enter-day 接管（进手动调整页并带上被点日期），
        这里不能再绑：两个处理器都会 mountOverlay，后跑的那个会把前者顶掉，
        结果打开的是无参数的静态示例弹窗（原计划日期固定 2026-09-28）。 */
-    if (!isC()) bindCalCells('#calCurrent');
+    if (!isCFlow()) bindCalCells('#calCurrent');
     bindCalScroll($('#smartCalWrap'));
   }
 
@@ -1504,9 +1512,169 @@
   }
 
   /* =======================================================================
+     方案 D：生成完成后先选择算法方案
+     ===================================================================== */
+  /* planDChoice 为 null 表示还没选，此时「查看方案」进的是选择页。
+     选了候选方案存它的 id，走保底方案存 'fallback'。 */
+  let planDChoice = null;
+  let planDScenario = 0;        // PLAN_D_SCENARIOS 下标，仅原型演示用
+
+  function resetPlanD() {
+    planDChoice = null;
+    planDScenario = 0;
+  }
+
+  const planDInfeasible = () => PLAN_D_SCENARIOS[planDScenario].infeasible;
+  const isCandidateOut = (id) => planDInfeasible().indexOf(id) >= 0;
+  /* 两个都无可行解 —— 这时没有可选项，只剩保底方案一条路 */
+  const allCandidatesOut = () =>
+    PLAN_D_CANDIDATES.every((c) => isCandidateOut(c.id));
+  const planDCandidate = (id) => PLAN_D_CANDIDATES.find((c) => c.id === id);
+
+  /* 一张候选方案卡。无可行解时整卡压灰、按钮换成不可点的说明 ——
+     保留卡片而不是直接隐藏：主管需要知道「我想要的那个方向为什么不行」，
+     卡片消失了就只剩一个选项，反而像是算法只给了一种方案。 */
+  function planDCardHtml(c) {
+    const out = isCandidateOut(c.id);
+    const metrics = c.metrics.map((m) => `
+          <div class="pd-metric">
+            <span class="pd-mk">${m.label}</span>
+            <span class="pd-mv ${m.tone || ''}">${m.value}</span>
+          </div>`).join('');
+
+    return `
+      <div class="pd-card ${out ? 'out' : ''}" data-pd-card="${c.id}">
+        <div class="pd-card-head">
+          <span class="pd-name">${c.name}</span>
+          ${c.recommend && !out ? `<span class="pd-badge rec">${PLAN_D_TEXT.recommend}</span>` : ''}
+          ${out ? `<span class="pd-badge out">${PLAN_D_TEXT.infeasibleTag}</span>` : ''}
+        </div>
+        <div class="pd-sub">${c.sub}</div>
+
+        <div class="pd-metrics">${metrics}</div>
+
+        ${out
+    ? `<div class="pd-reason">
+             <span class="pd-rk">${PLAN_D_TEXT.infeasibleKey}</span>${PLAN_D_INFEASIBLE[c.id]}
+           </div>`
+    : `<ul class="pd-pros">
+             <li class="good">${c.good}</li>
+             <li class="bad">${c.bad}</li>
+           </ul>`}
+
+        <div class="pd-card-foot">
+          ${out
+    ? `<button class="btn is-disabled" disabled>${PLAN_D_TEXT.infeasibleTag}</button>`
+    : `<button class="btn btn-primary" data-pd-pick="${c.id}">${PLAN_D_TEXT.pick}</button>`}
+        </div>
+      </div>`;
+  }
+
+  function openPlanChoice() {
+    const allOut = allCandidatesOut();
+    const someOut = planDInfeasible().length > 0;
+
+    /* 保底方案入口的出现条件：只要有任一方案不可行就给。
+       两个都可行时不给 —— 那时保底方案没有存在意义，多一个按钮只会让人
+       以为「还有第三种方案」。 */
+    const fallbackBtn = allOut
+      ? `<button class="btn btn-primary" id="btnPdFallback">${PLAN_D_TEXT.onlyFallback}</button>`
+      : (someOut
+        ? `<button class="btn" id="btnPdFallback">${PLAN_D_TEXT.declineAll}</button>`
+        : '');
+
+    mountOverlay(`
+      <div class="mask" data-close-drawer></div>
+      <aside class="drawer" id="planChoiceDrawer">
+        <div class="drawer-head">
+          <span class="grow">${PLAN_D_TEXT.chooseTitle}</span>
+          <!-- 演示场景切换：可行性是后端算的，界面上没有自然操作能触发
+               「无可行解」，三条支线又都要能演示，所以显式给个开关 -->
+          <span class="pd-demo">
+            <span class="pd-demo-tag">${PLAN_D_TEXT.demoTag}</span>
+            <span class="pd-demo-key">${PLAN_D_TEXT.demoKey}</span>
+            ${dd(PLAN_D_SCENARIOS[planDScenario].label,
+    PLAN_D_SCENARIOS.map((s) => s.label), 'control-w-xl', '', 'pdScenario')}
+          </span>
+          <button class="icon-btn" data-close-drawer title="关闭">${closeX}</button>
+        </div>
+        <div class="drawer-body">
+          <div class="pd-lead">${allOut
+    ? PLAN_D_TEXT.fallbackLeadNone
+    : PLAN_D_TEXT.chooseLead}</div>
+          <div class="pd-grid">${PLAN_D_CANDIDATES.map(planDCardHtml).join('')}</div>
+        </div>
+        <div class="drawer-foot">
+          <span class="foot-hint">${allOut
+    ? PLAN_D_TEXT.fallbackHint
+    : '两个方向各有取舍，选定后仍可逐日手动调整'}</span>
+          <div class="grow"></div>
+          <button class="btn" data-close-drawer>${PLAN_D_TEXT.cancel}</button>
+          ${fallbackBtn}
+        </div>
+      </aside>`);
+
+    $$('[data-pd-pick]').forEach((b) => b.addEventListener('click', () => {
+      planDChoice = b.dataset.pdPick;
+      const c = planDCandidate(planDChoice);
+      logSmart('generate', `选择算法方案「${c.name}」，进入方案查看与调整`);
+      openPlanFlowB('compare');
+      toast(`已选择「${c.name}」`);
+    }));
+
+    const fb = $('#btnPdFallback');
+    if (fb) fb.addEventListener('click', () => {
+      planDChoice = 'fallback';
+      logSmart('generate',
+        `采用保底方案（已放弃 ${PLAN_D_FALLBACK.waived.length} 项约束条件）`);
+      openPlanFlowB('compare');
+    });
+
+    /* 切演示场景就地重渲这一页。已选的方案要清掉 ——
+       换了场景之后原先选的那个可能已经不可行了 */
+    const sc = $('#pdScenario');
+    if (sc) sc.addEventListener('dd:change', (e) => {
+      const i = PLAN_D_SCENARIOS.findIndex((s) => s.label === e.detail);
+      planDScenario = i < 0 ? 0 : i;
+      planDChoice = null;
+      openPlanChoice();
+    });
+
+    initWidgets(overlayMount);
+  }
+
+  /* 保底方案的说明横幅。放在抽屉正文最上面、日历之前 ——
+     这份计划是打了折的，用户得先知道折在哪儿，再去看日历上的数字。 */
+  function planDFallbackBannerHtml() {
+    const items = PLAN_D_FALLBACK.waived.map((w) => `
+          <li>
+            <span class="pdw-name">${w.name}</span>
+            <span class="pdw-why">${w.why}</span>
+          </li>`).join('');
+
+    return `
+      <div class="pd-fallback">
+        <span class="pdf-icon">${icon('complaint', 20, 1.7)}</span>
+        <div class="pdf-main">
+          <div class="pdf-title">
+            <span class="pdf-tag">${PLAN_D_TEXT.fallbackTag}</span>
+            ${allCandidatesOut()
+    ? PLAN_D_TEXT.fallbackLeadNone
+    : PLAN_D_TEXT.fallbackLeadPartial}
+          </div>
+          <div class="pdf-key">${PLAN_D_TEXT.waivedKey}（${PLAN_D_FALLBACK.waived.length} 项）</div>
+          <ul class="pdf-list">${items}</ul>
+          <div class="pdf-kept">${PLAN_D_FALLBACK.kept}</div>
+        </div>
+      </div>`;
+  }
+
+  /* =======================================================================
      浮层：查看智能编排方案（截图 3）
      ===================================================================== */
   function openPlanDrawer() {
+    /* 方案 D 的前置步骤：还没选过就先进选择页 */
+    if (isD() && !planDChoice) return openPlanChoice();
     if (isFlow()) return openPlanFlowB();
     const html = `
       <div class="mask" data-close-drawer></div>
@@ -1590,13 +1758,13 @@
 
   /* 「可以改方案」的那个视图：方案 B 是 tune，方案 C 就是 compare。
      调整/撤销完成后要回到哪儿，全部走这个函数，免得两套流程各写一遍。 */
-  const editView = () => (isC() ? 'compare' : 'tune');
+  const editView = () => (isCFlow() ? 'compare' : 'tune');
 
   function openPlanFlowB(view) {
     planView = view || 'compare';
     /* 方案 C 只有 compare 一个视图（既没有 tune 模式，也取消了 preview 这一步），
        万一被旧链接或历史调用带进来，统一归一到 compare */
-    if (isC() && planView !== 'compare') planView = 'compare';
+    if (isCFlow() && planView !== 'compare') planView = 'compare';
     const isTune = planView === 'tune';
     const isPreview = planView === 'preview';
 
@@ -1621,7 +1789,12 @@
 
     /* 三个视图的顶部完全一致（查询条件 + KPI）——预览只是把底部动作换成「应用」，
        没必要换一套头部；影响摘要留在点「应用方案」后的确认弹窗里说。 */
+    /* 方案 D 走保底方案时，正文最上面插一条说明横幅 ——
+       这份计划放弃了部分约束，用户得先知道折在哪儿再看日历上的数字 */
+    const isFallback = isD() && planDChoice === 'fallback';
+
     const body = `
+          ${isFallback ? planDFallbackBannerHtml() : ''}
           ${filterbar}
           <div id="planStats">${
             deltaStatsHtml(weekSlice(CAL_CURRENT), weekSlice(CAL_PLAN))}</div>
@@ -1632,7 +1805,7 @@
                    对比 / 预览 → 「手动调整」入口；调整模式 → 「撤销调整」。
                  方案 C 这里一律留空 —— 入口是点日历，撤销改叫「取消调整」挪到页脚
                  与「确认调整」成对，同一个动作不在两处各放一个按钮。 -->
-            ${isC()
+            ${isCFlow()
               ? ''
               : (isTune
                 ? (isTuned()
@@ -1656,7 +1829,7 @@
           <span class="foot-hint warn">${PLAN_B_TEXT.applyWarn}</span>
           <button class="btn" id="btnBackToTune">${PLAN_B_TEXT.backToTune}</button>
           <button class="btn btn-primary" id="btnApplyB">${PLAN_B_TEXT.apply}</button>`;
-    } else if (isC()) {
+    } else if (isCFlow()) {
       /* 方案 C 只有这一个页面。取消了「调整后方案预览」那一步 ——
          人工调整的结果本来就直接画在这张日历上（紫边条、调整角标、已手动调整至 X 日），
          再单独给一页只是把同样的内容重复一遍。
@@ -1664,13 +1837,25 @@
 
          左侧常驻「点日历就能调」的提示 —— 没有入口按钮，
          可点这件事只剩 hover 高亮在暗示，这句话必须留着。 */
+      /* 保底方案页不给「修改条件重新生成」：走到这一步的前提就是
+         当前约束下无可行解，回去改参数再等一轮不是此刻要的；
+         主管要的是先拿到一份能执行的计划。
+         方案 D 选了候选方案时则换成「重新选择方案」—— 回选择页比回条件页近。 */
+      const dAlt = isFallback
+        ? ''
+        : (isD()
+          ? `<button class="btn" id="btnPdReselect">重新选择方案</button>`
+          : `<button class="btn" id="btnRegen">${PLAN_B_TEXT.regen}</button>`);
+
       foot = `
-          <span class="foot-hint">${isTuned()
-            ? `已手动调整 ${manualDayCount()} 天，可继续点击日历调整`
-            : PLAN_C_TEXT.clickHint}</span>
+          <span class="foot-hint${isFallback ? ' warn' : ''}">${isFallback
+            ? PLAN_D_TEXT.fallbackHint
+            : (isTuned()
+              ? `已手动调整 ${manualDayCount()} 天，可继续点击日历调整`
+              : PLAN_C_TEXT.clickHint)}</span>
           <div class="grow"></div>
-          <span class="foot-hint warn">${isTuned() ? PLAN_B_TEXT.applyWarn : ''}</span>
-          <button class="btn" id="btnRegen">${PLAN_B_TEXT.regen}</button>
+          <span class="foot-hint warn">${isTuned() && !isFallback ? PLAN_B_TEXT.applyWarn : ''}</span>
+          ${dAlt}
           ${isTuned()
             ? `<button class="btn btn-undo" id="btnUndoAll">${PLAN_C_TEXT.cancelTune}</button>
                <button class="btn btn-primary" id="btnApplyB">${PLAN_C_TEXT.confirmApply}</button>`
@@ -1690,14 +1875,22 @@
           <button class="btn btn-primary" id="btnApplyB">${PLAN_B_TEXT.apply}</button>`;
     }
 
-    const title = isPreview ? PLAN_B_TEXT.previewTitle
+    let title = isPreview ? PLAN_B_TEXT.previewTitle
       : (isTune ? `${PLAN_B_TEXT.title} · ${PLAN_B_TEXT.tune}` : PLAN_B_TEXT.title);
+    if (isFallback) title = PLAN_D_TEXT.fallbackTitle;
+
+    /* 方案 D 选了哪个方向要一直挂在标题栏上 —— 调整到一半时
+       「我现在看的是均衡还是省工时」必须随时可确认 */
+    const dTag = (isD() && planDChoice && !isFallback && planDCandidate(planDChoice))
+      ? `<span class="tag-pd">${planDCandidate(planDChoice).name}</span>`
+      : '';
 
     mountOverlay(`
       <div class="mask" data-close-drawer></div>
       <aside class="drawer" id="planDrawer" data-view="${planView}">
         <div class="drawer-head">
           <span class="grow">${title}</span>
+          ${dTag}
           ${isTuned() ? `<span class="tag-tuned">${PLAN_B_TEXT.tunedTag} ${manualDayCount()} 天</span>` : ''}
           <button class="icon-btn" title="全屏">${expandIco}</button>
           <button class="icon-btn" data-close-drawer title="关闭">${closeX}</button>
@@ -1710,6 +1903,13 @@
     const on = (sel, fn) => { const el = $(sel); if (el) el.addEventListener('click', fn); };
 
     on('#btnRegen', regenerateFromConditions);
+    /* 重新选择方案：把选择状态清掉再回选择页，顺带丢弃本轮的人工调整 ——
+       换了优化方向之后，基于旧方向做的那些调整已经没有意义了 */
+    on('#btnPdReselect', () => {
+      planDChoice = null;
+      manualMoves = [];
+      openPlanChoice();
+    });
     on('#btnApplyB', confirmApplyPlan);
     on('#btnEnterTune', () => openPlanFlowB('tune'));
     on('#btnTuneDone', () => openPlanFlowB('preview'));
@@ -1718,7 +1918,7 @@
     on('#btnUndoAll', undoManualTunes);
 
     /* 日历可点就要接线。B 只在调整模式可点；C 只有对比页，常态可点 */
-    if (isTune || isC()) {
+    if (isTune || isCFlow()) {
       /* 点任意日期 → 把该日保养搬到别的日期 */
       $$('#compareWrap [data-tune-day]').forEach((cell) => {
         cell.addEventListener('click', () => openManualTune(cell.dataset.tuneDay));
@@ -2010,10 +2210,17 @@
     const suffix = tuned ? `（含 ${manualDayCount()} 天人工调整）` : '';
     /* 工单数要在清空 manualMoves 之前算 —— 清完就数不出来了 */
     const orders = applyOrderRowsC().length;
+    /* 方案 D 要把「应用的是哪个方向 / 是不是保底方案」记进历史：
+       保底方案放弃过约束，事后追溯时这件事比工单数更重要 */
+    let what = '智能编排方案';
+    if (isD() && planDChoice === 'fallback') {
+      what = `保底方案（已放弃 ${PLAN_D_FALLBACK.waived.length} 项约束条件）`;
+    } else if (isD() && planDCandidate(planDChoice)) {
+      what = `智能编排方案「${planDCandidate(planDChoice).name}」`;
+    }
     manualMoves = [];
-    logSmart('apply',
-      `应用智能编排方案，共 ${orders} 张工单调整日期${suffix}`);
-    toast(`智能编排方案已应用${suffix}`);
+    logSmart('apply', `应用${what}，共 ${orders} 张工单调整日期${suffix}`);
+    toast(`${isD() && planDChoice === 'fallback' ? '保底方案' : '智能编排方案'}已应用${suffix}`);
   }
 
   /* 取消了「方案预览」这一步后，影响摘要改在点「应用方案」时弹出确认。
@@ -2029,7 +2236,7 @@
           <!-- 方案 C 的确认框里有四列明细表，必须用加宽版。
                加宽条件不能绑在「有没有人工调整」上 —— 算法调整同样要进这张表，
                476px 下表格区只有 336px，展开的工单明细（380px）会被横向截断。 -->
-          <div class="modal modal-confirm ${isC() ? 'modal-confirm-wide' : ''}"
+          <div class="modal modal-confirm ${isCFlow() ? 'modal-confirm-wide' : ''}"
                id="applyModal" role="alertdialog" aria-labelledby="applyTitle">
             <button class="icon-btn confirm-close" data-close-apply aria-label="关闭">${closeX}</button>
             <div class="modal-body">
@@ -2037,7 +2244,7 @@
                 <span class="confirm-icon warn">${icon('complaint', 22, 1.7)}</span>
                 <div class="confirm-main">
                   <div class="confirm-title" id="applyTitle">${PLAN_APPLY_CONFIRM.title}</div>
-                  ${isC() ? applySummaryHtmlC() : `
+                  ${isCFlow() ? applySummaryHtmlC() : `
                   ${applySummaryHtml()}
                   ${moves ? `
                   <div class="apply-sum" style="margin-top:10px">
@@ -2061,7 +2268,7 @@
       el.addEventListener('click', () => layer.remove()));
 
     /* 智能编排方案的确认表里混着算法与手动两类，所以要「调整方式」列 */
-    if (isC()) bindOrderGroupExpand(layer, applyProjectGroupsC(), true);
+    if (isCFlow()) bindOrderGroupExpand(layer, applyProjectGroupsC(), true);
 
     $('#btnApplyConfirm', layer).addEventListener('click', () => {
       layer.remove();
@@ -2094,7 +2301,7 @@
       /* 勾选决定搬哪几张，只在方案 C 开启 —— A/B 已冻结，那两套按整天搬移。
          点「已手动调整至 X」进来时，把上次挑中的工单默认勾回来：
          这一刻用户要核对或改的就是那几张，让他自己重新找一遍没有道理。 */
-      pickable: isC(),
+      pickable: isCFlow(),
       picked: mv && mv.orders ? mv.orders.map((o) => o.no) : null,
       // 取消也要退回调整模式，不能把用户丢回智能编排首页
       onCancel: () => openPlanFlowB(editView()),
@@ -2329,9 +2536,9 @@
 
               <!-- 默认档位只在方案 C 改成「仅调整此保养」：调一天的保养日期
                    本来就是一次性的，默认把未来所有保养都跟着挪，影响面远超用户意图。
-                   A/B 已冻结，所以按 isC() 分流，不动那两套的默认值。 -->
+                   A/B 已冻结，所以按 isCFlow() 分流，不动那两套的默认值。 -->
               <div class="adjust-radio-block">
-                <label class="radio${isC() ? ' on' : ''}" data-radio="scope" data-val="one">
+                <label class="radio${isCFlow() ? ' on' : ''}" data-radio="scope" data-val="one">
                   <span class="radio-dot"></span><span>仅调整此保养</span>
                 </label>
                 <div class="sub">
@@ -2342,7 +2549,7 @@
               </div>
 
               <div class="adjust-radio-block">
-                <label class="radio${isC() ? '' : ' on'}" data-radio="scope" data-val="all">
+                <label class="radio${isCFlow() ? '' : ' on'}" data-radio="scope" data-val="all">
                   <span class="radio-dot"></span><span>调整所有保养</span>
                 </label>
                 <div class="sub"><span>调整后未来全部保养</span></div>
@@ -3162,11 +3369,15 @@
       A: '已切回方案A：对比与应用为平级按钮',
       B: '已切换到方案B：手动调整为独立模式（按按钮进入）',
       C: '已切换到方案C：日历常态可点，点哪天调哪天',
+      D: '已切换到方案D：生成后先选择算法方案，再查看调整',
     };
 
     function setMode(next) {
       planMode = next;
       manualMoves = [];
+      /* 切模式要把方案 D 的选择状态一起清掉，否则切出去再切回来会
+         跳过「选择方案」直接进对比页，看起来像这一步丢了 */
+      resetPlanD();
       syncModeButtons();
       toast(MODE_TOAST[planMode]);
       goScreen(currentScreen);
@@ -3183,6 +3394,14 @@
       e.stopPropagation();
       setMode(isC() ? 'A' : 'C');
     });
+
+    /* 方案 D 与 C 是一对对照组，所以 D 关掉时回到 C 而不是 A ——
+       D 本身就是「C 加一道选择步骤」，拿 A 做对照没有意义 */
+    const mtd = $('#modeToggleD');
+    if (mtd) mtd.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setMode(isD() ? 'C' : 'D');
+    });
   }
 
   /* 两个模式按钮的高亮，以及方案 C 专属样式的开关。
@@ -3191,8 +3410,12 @@
     const mt = $('#modeToggle');
     const mtc = $('#modeToggleC');
     if (mt) mt.classList.toggle('on', isB());
+    /* 浮钮高亮用严格判断：D 模式下不该把 C 的按钮点亮。
+       plan-c 样式类仍按 isCFlow() —— D 沿用 C 的全部配色差异。 */
     if (mtc) mtc.classList.toggle('on', isC());
-    document.body.classList.toggle('plan-c', isC());
+    const mtd = $('#modeToggleD');
+    if (mtd) mtd.classList.toggle('on', isD());
+    document.body.classList.toggle('plan-c', isCFlow());
   }
 
   /* 按 PROTO_UI 开关隐藏原型脚手架。走 body 上的类名 + CSS，
@@ -3201,11 +3424,25 @@
     document.body.classList.toggle('hide-proto-nav', !PROTO_UI.nav);
     document.body.classList.toggle('hide-mode-b', !PROTO_UI.modeB);
     document.body.classList.toggle('hide-mode-c', !PROTO_UI.modeC);
+    document.body.classList.toggle('hide-mode-d', !PROTO_UI.modeD);
     /* 某个方案的入口藏了，就不能停在那个方案上 —— 没有任何按钮能切出去。
-       方案 C 是现在唯一保留的设计，所以它的入口一藏就直接锁定在 C；
-       只藏 B 时落回 A（那时 C 的按钮还在，两者仍可互切）。 */
-    if (!PROTO_UI.modeC) planMode = 'C';
-    else if (!PROTO_UI.modeB && isB()) planMode = 'A';
+       方案 C 的入口藏起来时直接锁定在 C（它是保留下来的那套设计）；
+       D 的入口也藏了才落回 C，否则停在 D 就出不来。 */
+    if (!PROTO_UI.modeD && isD()) planMode = 'C';
+    if (!PROTO_UI.modeC && !isD()) planMode = 'C';
+    if (!PROTO_UI.modeB && isB()) planMode = PROTO_UI.modeC ? 'A' : 'C';
+
+    /* 抽屉页脚要给浮钮让出左边的位置。按实测宽度算，不写死 ——
+       浮钮个数会变（现在四个），每个还能被 PROTO_UI 单独隐藏，
+       手工量出来的常量必然过期。全藏起来时就不需要让位了。 */
+    const bar = $('.proto-bar');
+    const DRAWER_LEFT = 286;   // .drawer 的 width: calc(100% - 286px)
+    let pad = 20;
+    if (bar && bar.offsetParent !== null) {
+      const right = bar.getBoundingClientRect().right;
+      pad = Math.max(20, Math.round(right + 12 - DRAWER_LEFT));
+    }
+    document.documentElement.style.setProperty('--foot-pad', pad + 'px');
   }
 
   /* =======================================================================

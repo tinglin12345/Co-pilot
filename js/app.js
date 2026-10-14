@@ -1318,6 +1318,16 @@
            派生结果，不是需要常驻可见的独立信息，常驻反而让人以为
            那也是一个可调的字段。 -->
       <div class="cond-toolbar">
+        <!-- 工作组：固定值展示，不可点开。这一页是在给选定的工作组设条件，
+             不是切换入口，所以用 staticField 而不是 dd() —— 和筛选条上
+             那几处「工作组」字段同一处理方式，一个能点开却选不出别的东西
+             只会让人以为自己操作错了。放在工具条最左侧、工作组级约束之前，
+             先说清「在给谁设置」，再说「设置的是什么」。 -->
+        <span class="ctb-group">
+          <span class="ctb-k">工作组</span>
+          ${staticField(WORKGROUP.label, 'control-w-md')}
+        </span>
+
         <!-- 工作组级约束：当前唯一一条，承载值并入 tip，不再单独占位 -->
         <span class="ctb-group">
           <span class="ctb-tag">${COND_SECTIONS.group.title}</span>

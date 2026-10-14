@@ -1333,12 +1333,15 @@
           ${staticField(WORKGROUP.label, 'control-w-md')}
         </span>
 
-        <!-- 工作组级约束：当前唯一一条，承载值并入 tip，不再单独占位 -->
+        <!-- 工作组级约束：当前唯一一条，承载值并入 tip，不再单独占位。
+             错误提示挂在输入框右侧，不单独占一行——这条工具条本来就是
+             横向一条，错误文字另起一行会把两类彼此独立的分组撑得错位。 -->
         <span class="ctb-group">
           <span class="ctb-tag">${COND_SECTIONS.group.title}</span>
           <span class="ctb-k">${GROUP_CONDITION.label}${help(
             GROUP_CONDITION.tip(GROUP_CONDITION.value, WORKGROUP.size))}</span>
           ${numInput(GROUP_CONDITION.value, GROUP_CONDITION.unit, 'groupMaxPerHead')}
+          <span class="ctb-err" id="groupMaxPerHeadErr"></span>
         </span>
 
         <div class="grow"></div>
@@ -1421,22 +1424,52 @@
     const per = $('#groupMaxPerHead');
     const tipEl = per && per.closest('.ctb-group')
       ? $('.help-dot', per.closest('.ctb-group')) : null;
+    const errEl = $('#groupMaxPerHeadErr');
     if (per && tipEl) {
+      const MIN = GROUP_CONDITION.min;
+      const MAX = GROUP_CONDITION.max;
+
+      /* 整数判定：不认小数点、不认科学计数法 e、不认空字符串。
+         type="number" 不会主动拦住这些输入，必须自己过滤。 */
+      const isInt = (s) => /^-?\d+$/.test(s);
+
       const sync = () => {
-        const v = parseInt(per.value, 10);
-        /* 非法输入（空/0/负数）时 tip 按 0 人份额生成，再把那句承载换成
-           「—」—— 0 台是个看起来合法的数字，会被当成真的产能上限读 */
-        const text = GROUP_CONDITION.tip(v || 0, WORKGROUP.size);
-        tipEl.dataset.tip = (!v || v < 1)
-          ? text.replace(/当日最大承载 = 0 台/, '当日最大承载 = — 台')
+        const raw = per.value;
+        const v = parseInt(raw, 10);
+        const bad = raw === '' || !isInt(raw) || v < MIN || v > MAX;
+
+        /* 超限/非整数：标红提示，但不强制改写输入框的值 ——
+           用户可能正在打多位数的路上（比如要输 16，中间会经过 1），
+           每敲一位就被纠正会打断输入。纠正只在失焦时做一次。
+           红框加在 .num-input 外层而不是 <input> 本身，
+           否则只有文字区域描红、看不出整个控件在报错。 */
+        const wrap = per.closest('.num-input');
+        if (wrap) wrap.classList.toggle('is-invalid', bad);
+        if (errEl) {
+          errEl.textContent = bad ? GROUP_CONDITION.rangeHint(MIN, MAX) : '';
+        }
+
+        /* ⓘ 提示里的「当日最大承载」只在值合法（整数且落在 1~16 内）时
+           才按真实输入值算；只要 bad 为真，承载统一显示「—」——
+           超限输入也去凑一个夹紧后的数字，等于默默接受了非法值，
+           和输入框标红、提示「请输入 1~16」这件事自相矛盾。 */
+        const text = GROUP_CONDITION.tip(bad ? MIN : v, WORKGROUP.size);
+        tipEl.dataset.tip = bad
+          ? text.replace(/当日最大承载 = \S+ 台/, '当日最大承载 = — 台')
           : text;
       };
       per.addEventListener('input', sync);
-      /* 失焦时把非法值补回最小值 1，避免留着一个空输入框就离开这一页 */
+      /* 失焦时把非法值纠正到最近的合法边界，避免留着一个标红的输入框
+         就离开这一页；纠正之后红框与提示自然一起消失 */
       per.addEventListener('blur', () => {
-        const v = parseInt(per.value, 10);
-        if (!v || v < 1) { per.value = 1; sync(); }
+        const raw = per.value;
+        const v = parseInt(raw, 10);
+        if (raw === '' || !isInt(raw) || isNaN(v)) { per.value = MIN; }
+        else if (v < MIN) { per.value = MIN; }
+        else if (v > MAX) { per.value = MAX; }
+        sync();
       });
+      sync();
     }
 
     const cb = $('#btnCondConfirm');

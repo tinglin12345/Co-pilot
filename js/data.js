@@ -766,7 +766,11 @@ const PLAN_D_PREVIEW_TEXT = {
    决策价值，他需要知道是哪一类约束把路堵死了。 */
 const PLAN_D_INFEASIBLE = {
   balanced: '均衡分布需要把 93 台设备摊到 14 天，但这些设备的可保养日期只覆盖周一至周三',
-  shorter: '压缩总工时会把同一项目的 51 台设备排在同一天，超出工作组单日承载上限 45 台',
+  /* 承载上限由工作组条件推导（人均上限 × 人数），不写死 ——
+     条件页上改了人均值，这句话里的数字必须跟着变，
+     否则会出现「条件页写 16 台、无解原因说 45 台」这种自相矛盾 */
+  shorter: '压缩总工时会把同一项目的 51 台设备排在同一天，超出工作组单日承载上限 '
+    + `${GROUP_CONDITION.value * WORKGROUP.size} 台`,
 };
 
 /* 保底方案放弃了哪些约束。逐条给出「放弃了什么」+「为什么不得不放弃」，
@@ -923,7 +927,10 @@ const SMART_FAIL_TYPES = {
   conflict: {
     code: 'SCHED_CONSTRAINT_CONFLICT',
     reason: '编排约束条件互相冲突，当前条件下无可行解',
-    detail: '93 台设备的可保养日期集中在周一至周三，超出工作组承载能力 2.3 倍',
+    /* 倍数由工作组承载推导：93 台挤在周一至周三 = 31 台/日，
+       除以当日最大承载（人均上限 × 人数）。写死的倍数会和条件页对不上。 */
+    detail: '93 台设备的可保养日期集中在周一至周三，超出工作组承载能力 '
+      + `${Math.round((93 / 3) / (GROUP_CONDITION.value * WORKGROUP.size) * 10) / 10} 倍`,
     guide: '到「智能编排条件设置」放宽可保养日期，或调整动态保养间隔',
     retryable: false,
     primary: { text: '去修改编排条件', go: 'conditions' },

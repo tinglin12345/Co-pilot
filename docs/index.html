@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<!-- 本文件由 build.js 自动生成（2026-10-14 03:19:33），已内联全部样式与脚本，
+<!-- 本文件由 build.js 自动生成（2026-10-14 03:27:47），已内联全部样式与脚本，
      可直接双击打开或发送给他人，无需任何外部文件与网络。
      请勿直接编辑此文件 —— 改动请在 css/ 与 js/ 下进行，然后重新执行 node build.js -->
 <meta charset="UTF-8" />
@@ -2395,6 +2395,12 @@ body.plan-c .cal-val.none {
   font-variant-numeric: tabular-nums;
 }
 
+/* 工作量分布那一行：轻松与繁重各自按语义着色，与图例、预览日历同一套。
+   这一行因此不再参与「两卡孰优」的着色 —— 一个颜色表达两种含义必有一个读错。 */
+.pd-lv.easy { color: var(--success-text); }
+.pd-lv.busy { color: var(--warn-text); }
+.pd-lv-sep { margin: 0 5px; color: var(--text-4); font-weight: 400; }
+
 /* 指标上的优劣只给这一项真正占优 / 吃亏的那张卡着色 ——
    两张都上色就等于没上色 */
 .pd-mv.good { color: var(--success-text); }
@@ -2578,38 +2584,53 @@ body.plan-c .cal-val.none {
   padding-bottom: 2px;
 }
 
-/* 每格左边日号、右边台量。日号让这张图能被当成日历读 ——
-   只有热力没有日期，看得出「前松后紧」却说不出是哪几天。 */
+/* 上下分区：日号在上、台量在下。
+   左右并排放两个数字时扫一眼分不清哪个是日号、哪个是台量，
+   上下分层后「坐标在上、数据在下」的结构一眼就读出来了。 */
 .pdp-c {
-  height: 26px;
-  padding: 0 4px;
+  height: 38px;
+  padding: 3px 2px;
   border-radius: 2px;
   border: 1px solid transparent;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 3px;
+  justify-content: center;
+  gap: 2px;
   font-variant-numeric: tabular-nums;
-  line-height: 1;
+  line-height: 1.15;
 }
 
 .pdp-c.blank { background: none; border-color: transparent; }
 
 /* 日号压成弱信息：它是坐标，台量才是要比的内容 */
-.pdp-d { flex: 0 0 auto; font-size: 10px; color: var(--text-3); }
+.pdp-d { font-size: 10px; color: var(--text-3); }
 
-/* 台量靠右，占满剩余宽度后右对齐，逐行扫下来数字是一条竖线 */
+/* 台量用语义色加粗，是这张图真正要比的数 */
 .pdp-u {
-  flex: 1 1 auto;
-  text-align: right;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: currentColor;
+  white-space: nowrap;
+}
+
+/* 「台」字弱化：单位要在，但不该和数值抢注意力。
+   有它才不会把台量和上面的日号当成同一类裸数字。 */
+.pdp-un {
+  font-size: 9px;
+  font-weight: 400;
+  font-style: normal;
+  margin-left: 1px;
+  opacity: .75;
 }
 
 /* 无保养安排用浅灰实心：和繁重、轻松并列成三种一眼可辨的状态。
    与 body.plan-c 下的 .cmp-row.none 同一个色值 */
 .pdp-c.none { background: var(--none-bg); }
 .pdp-c.none .pdp-d { color: var(--text-4); }
+
+/* 那道短横只是占位，让所有格子的日号基线对齐，不该被读成数据 */
+.pdp-c.none .pdp-u { color: var(--text-4); font-weight: 400; }
 
 /* 繁重 / 轻松直接复用对比视图 .cmp-row.now 那套语义三件套
    （底色 + 描边 + 文字），所以预览里的绿和黄与日历上的一模一样。
@@ -5252,13 +5273,16 @@ const PROTO_SCREENS = [
 
     return [
       {
-        /* 优劣按「轻松天数」比，不按繁重天数 —— 两个方向的繁重日恰好都是 2 天，
-           拿它比分不出高下；而同样的活摊在更多天上才是「均衡」的实质。
-           轻松 + 繁重 也正好等于有保养安排的天数，集中程度读者自己能看出来，
-           不必再单列一行。 */
+        /* 轻松与繁重各自按语义着色（绿 / 橙），和图例、下面的预览日历同一套配色。
+
+           这里刻意放弃了「整行按两卡优劣着色」的做法：同一行既要表达
+           「这是轻松那是繁重」，又要表达「这张卡在这项上更优」，两套含义
+           挤在一个颜色里必然有一个读错 —— 而和日历对齐的语义色更要紧，
+           谁的轻松天数多，看数字就知道。 */
         label: '工作量分布',
-        value: `轻松 ${me.easy} 天 / 繁重 ${me.busy} 天`,
-        tone: tone(me.easy, other.easy, 'up'),
+        value: `<span class="pd-lv easy">轻松 ${me.easy} 天</span>`
+          + `<span class="pd-lv-sep">/</span>`
+          + `<span class="pd-lv busy">繁重 ${me.busy} 天</span>`,
       },
       { label: '最大人均计划工时', value: cand.peakPerHead },
       {
@@ -5289,13 +5313,23 @@ const PROTO_SCREENS = [
       if (c.blank) return `<div class="pdp-c blank"></div>`;
       const u = c.u || 0;
       const date = `${c._m}月${c.d}日`;
+      /* 日期在上、台量在下，上下分区 —— 之前左右并排放两个数字，
+         扫一眼分不清哪个是日号哪个是台量。
+         台量带「台」字：这一格里唯一的裸数字是日号，台量必须自带单位
+         才不会和它混成一回事。 */
       const day = `<span class="pdp-d">${c.d}</span>`;
       if (!u) {
-        return `<div class="pdp-c none" title="${date} 无保养安排">${day}</div>`;
+        /* 无安排的日子也占住下面那一行（写一道短横），
+           否则只有日号的格子会居中，整排日号的基线就对不齐了 */
+        return `<div class="pdp-c none" title="${date} 无保养安排">
+                  ${day}<span class="pdp-u">—</span>
+                </div>`;
       }
       /* heavy 与对比视图同一把尺子（h >= HEAVY_HOURS），颜色不会两处不一致 */
       return `<div class="pdp-c ${c.heavy ? 'busy' : 'easy'}"
-                   title="${date} ${u}台 ${c.h}小时">${day}<span class="pdp-u">${u}</span></div>`;
+                   title="${date} ${u}台 ${c.h}小时">
+                ${day}<span class="pdp-u">${u}<i class="pdp-un">台</i></span>
+              </div>`;
     }).join('')).join('');
 
     const legend = PLAN_D_PREVIEW_TEXT.legend.map((l) =>
@@ -6820,6 +6854,12 @@ const PROTO_SCREENS = [
   const FAIL_AT = 68;
 
   function startGenerating(failType) {
+    /* 方案 D：重新生成就是重新算一轮，必须退回「选择方案」那一步。
+       不清掉上次的选择，再点一次「智能编排」会直接跳到上次选中的那个方案的
+       对比页 —— 看起来像选择这一步丢了，而且用户拿到的其实是新一轮的方案
+       却沿用了上一轮的决定。
+       演示场景（planDScenario）不清：那是用户为了看某条支线特意设的。 */
+    planDChoice = null;
     let pct = 12;
     const el = showNotify(pct);
     genTimer = setInterval(() => {

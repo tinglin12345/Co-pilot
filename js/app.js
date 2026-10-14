@@ -1565,13 +1565,16 @@
 
     return [
       {
-        /* 优劣按「轻松天数」比，不按繁重天数 —— 两个方向的繁重日恰好都是 2 天，
-           拿它比分不出高下；而同样的活摊在更多天上才是「均衡」的实质。
-           轻松 + 繁重 也正好等于有保养安排的天数，集中程度读者自己能看出来，
-           不必再单列一行。 */
+        /* 轻松与繁重各自按语义着色（绿 / 橙），和图例、下面的预览日历同一套配色。
+
+           这里刻意放弃了「整行按两卡优劣着色」的做法：同一行既要表达
+           「这是轻松那是繁重」，又要表达「这张卡在这项上更优」，两套含义
+           挤在一个颜色里必然有一个读错 —— 而和日历对齐的语义色更要紧，
+           谁的轻松天数多，看数字就知道。 */
         label: '工作量分布',
-        value: `轻松 ${me.easy} 天 / 繁重 ${me.busy} 天`,
-        tone: tone(me.easy, other.easy, 'up'),
+        value: `<span class="pd-lv easy">轻松 ${me.easy} 天</span>`
+          + `<span class="pd-lv-sep">/</span>`
+          + `<span class="pd-lv busy">繁重 ${me.busy} 天</span>`,
       },
       { label: '最大人均计划工时', value: cand.peakPerHead },
       {
@@ -1602,13 +1605,23 @@
       if (c.blank) return `<div class="pdp-c blank"></div>`;
       const u = c.u || 0;
       const date = `${c._m}月${c.d}日`;
+      /* 日期在上、台量在下，上下分区 —— 之前左右并排放两个数字，
+         扫一眼分不清哪个是日号哪个是台量。
+         台量带「台」字：这一格里唯一的裸数字是日号，台量必须自带单位
+         才不会和它混成一回事。 */
       const day = `<span class="pdp-d">${c.d}</span>`;
       if (!u) {
-        return `<div class="pdp-c none" title="${date} 无保养安排">${day}</div>`;
+        /* 无安排的日子也占住下面那一行（写一道短横），
+           否则只有日号的格子会居中，整排日号的基线就对不齐了 */
+        return `<div class="pdp-c none" title="${date} 无保养安排">
+                  ${day}<span class="pdp-u">—</span>
+                </div>`;
       }
       /* heavy 与对比视图同一把尺子（h >= HEAVY_HOURS），颜色不会两处不一致 */
       return `<div class="pdp-c ${c.heavy ? 'busy' : 'easy'}"
-                   title="${date} ${u}台 ${c.h}小时">${day}<span class="pdp-u">${u}</span></div>`;
+                   title="${date} ${u}台 ${c.h}小时">
+                ${day}<span class="pdp-u">${u}<i class="pdp-un">台</i></span>
+              </div>`;
     }).join('')).join('');
 
     const legend = PLAN_D_PREVIEW_TEXT.legend.map((l) =>
@@ -3133,6 +3146,12 @@
   const FAIL_AT = 68;
 
   function startGenerating(failType) {
+    /* 方案 D：重新生成就是重新算一轮，必须退回「选择方案」那一步。
+       不清掉上次的选择，再点一次「智能编排」会直接跳到上次选中的那个方案的
+       对比页 —— 看起来像选择这一步丢了，而且用户拿到的其实是新一轮的方案
+       却沿用了上一轮的决定。
+       演示场景（planDScenario）不清：那是用户为了看某条支线特意设的。 */
+    planDChoice = null;
     let pct = 12;
     const el = showNotify(pct);
     genTimer = setInterval(() => {

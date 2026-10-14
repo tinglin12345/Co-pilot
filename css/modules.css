@@ -2033,6 +2033,12 @@ body.plan-c .cal-val.none {
   font-variant-numeric: tabular-nums;
 }
 
+/* 工作量分布那一行：轻松与繁重各自按语义着色，与图例、预览日历同一套。
+   这一行因此不再参与「两卡孰优」的着色 —— 一个颜色表达两种含义必有一个读错。 */
+.pd-lv.easy { color: var(--success-text); }
+.pd-lv.busy { color: var(--warn-text); }
+.pd-lv-sep { margin: 0 5px; color: var(--text-4); font-weight: 400; }
+
 /* 指标上的优劣只给这一项真正占优 / 吃亏的那张卡着色 ——
    两张都上色就等于没上色 */
 .pd-mv.good { color: var(--success-text); }
@@ -2216,38 +2222,53 @@ body.plan-c .cal-val.none {
   padding-bottom: 2px;
 }
 
-/* 每格左边日号、右边台量。日号让这张图能被当成日历读 ——
-   只有热力没有日期，看得出「前松后紧」却说不出是哪几天。 */
+/* 上下分区：日号在上、台量在下。
+   左右并排放两个数字时扫一眼分不清哪个是日号、哪个是台量，
+   上下分层后「坐标在上、数据在下」的结构一眼就读出来了。 */
 .pdp-c {
-  height: 26px;
-  padding: 0 4px;
+  height: 38px;
+  padding: 3px 2px;
   border-radius: 2px;
   border: 1px solid transparent;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 3px;
+  justify-content: center;
+  gap: 2px;
   font-variant-numeric: tabular-nums;
-  line-height: 1;
+  line-height: 1.15;
 }
 
 .pdp-c.blank { background: none; border-color: transparent; }
 
 /* 日号压成弱信息：它是坐标，台量才是要比的内容 */
-.pdp-d { flex: 0 0 auto; font-size: 10px; color: var(--text-3); }
+.pdp-d { font-size: 10px; color: var(--text-3); }
 
-/* 台量靠右，占满剩余宽度后右对齐，逐行扫下来数字是一条竖线 */
+/* 台量用语义色加粗，是这张图真正要比的数 */
 .pdp-u {
-  flex: 1 1 auto;
-  text-align: right;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: currentColor;
+  white-space: nowrap;
+}
+
+/* 「台」字弱化：单位要在，但不该和数值抢注意力。
+   有它才不会把台量和上面的日号当成同一类裸数字。 */
+.pdp-un {
+  font-size: 9px;
+  font-weight: 400;
+  font-style: normal;
+  margin-left: 1px;
+  opacity: .75;
 }
 
 /* 无保养安排用浅灰实心：和繁重、轻松并列成三种一眼可辨的状态。
    与 body.plan-c 下的 .cmp-row.none 同一个色值 */
 .pdp-c.none { background: var(--none-bg); }
 .pdp-c.none .pdp-d { color: var(--text-4); }
+
+/* 那道短横只是占位，让所有格子的日号基线对齐，不该被读成数据 */
+.pdp-c.none .pdp-u { color: var(--text-4); font-weight: 400; }
 
 /* 繁重 / 轻松直接复用对比视图 .cmp-row.now 那套语义三件套
    （底色 + 描边 + 文字），所以预览里的绿和黄与日历上的一模一样。

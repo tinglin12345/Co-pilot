@@ -1595,14 +1595,20 @@
     const head = WEEKDAYS.map((w) =>
       `<div class="pdp-h">${w.replace('周', '')}</div>`).join('');
 
+    /* 每格都写日期 —— 没有日期它就只是一张热力图，看出「前面松后面紧」
+       却没法说出是哪几天紧，而选方案时「哪几天堆在一起」正是要点。
+       起始日之前的空格不写（那几天不属于这个编排周期）。 */
     const body = rows.map((row) => row.map((c) => {
       if (c.blank) return `<div class="pdp-c blank"></div>`;
       const u = c.u || 0;
       const date = `${c._m}月${c.d}日`;
-      if (!u) return `<div class="pdp-c none" title="${date} 无保养安排"></div>`;
+      const day = `<span class="pdp-d">${c.d}</span>`;
+      if (!u) {
+        return `<div class="pdp-c none" title="${date} 无保养安排">${day}</div>`;
+      }
       /* heavy 与对比视图同一把尺子（h >= HEAVY_HOURS），颜色不会两处不一致 */
       return `<div class="pdp-c ${c.heavy ? 'busy' : 'easy'}"
-                   title="${date} ${u}台 ${c.h}小时">${u}</div>`;
+                   title="${date} ${u}台 ${c.h}小时">${day}<span class="pdp-u">${u}</span></div>`;
     }).join('')).join('');
 
     const legend = PLAN_D_PREVIEW_TEXT.legend.map((l) =>
@@ -1612,6 +1618,8 @@
         <div class="pd-preview">
           <div class="pdp-cap">
             <span>${PLAN_D_PREVIEW_TEXT.caption(PLAN_D_PREVIEW_WEEKS)}</span>
+            <!-- 具体日期范围写出来，格子里的日号才有坐标 -->
+            <span class="pdp-range">${rangeLabel(rows)}</span>
             <span class="pdp-legend">${legend}</span>
           </div>
           <div class="pdp-grid">${head}${body}</div>

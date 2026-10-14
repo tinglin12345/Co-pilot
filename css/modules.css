@@ -2193,6 +2193,8 @@ body.plan-c .cal-val.none {
   color: var(--text-3);
 }
 
+.pdp-range { color: var(--text-2); font-variant-numeric: tabular-nums; }
+
 .pdp-legend { display: inline-flex; gap: 10px; margin-left: auto; }
 .pdp-lg { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 
@@ -2214,28 +2216,54 @@ body.plan-c .cal-val.none {
   padding-bottom: 2px;
 }
 
-/* 方块里写当日台量。数字压到 10px 并用等宽，横向扫一行时不会因为
-   字宽不一而显得参差；0 台的日子不写数字，留空本身就是信息。 */
+/* 每格左边日号、右边台量。日号让这张图能被当成日历读 ——
+   只有热力没有日期，看得出「前松后紧」却说不出是哪几天。 */
 .pdp-c {
-  height: 22px;
+  height: 26px;
+  padding: 0 4px;
   border-radius: 2px;
+  border: 1px solid transparent;
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 10px;
+  gap: 3px;
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
 
-.pdp-c.blank { background: none; }
+.pdp-c.blank { background: none; border-color: transparent; }
 
-/* 无保养安排用浅灰实心：和繁重、轻松并列成三种一眼可辨的状态 */
+/* 日号压成弱信息：它是坐标，台量才是要比的内容 */
+.pdp-d { flex: 0 0 auto; font-size: 10px; color: var(--text-3); }
+
+/* 台量靠右，占满剩余宽度后右对齐，逐行扫下来数字是一条竖线 */
+.pdp-u {
+  flex: 1 1 auto;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 600;
+  color: currentColor;
+}
+
+/* 无保养安排用浅灰实心：和繁重、轻松并列成三种一眼可辨的状态。
+   与 body.plan-c 下的 .cmp-row.none 同一个色值 */
 .pdp-c.none { background: var(--none-bg); }
+.pdp-c.none .pdp-d { color: var(--text-4); }
 
-/* 繁重 / 轻松沿用语义色，底色压淡、文字取深色，
-   22px 高的小方块上直接铺饱和色会糊掉里面的数字 */
-.pdp-c.easy { background: #e8f5e0; color: #3f8c15; }
-.pdp-c.busy { background: #ffe9cc; color: #c05f00; }
+/* 繁重 / 轻松直接复用对比视图 .cmp-row.now 那套语义三件套
+   （底色 + 描边 + 文字），所以预览里的绿和黄与日历上的一模一样。
+   不再自己调近似色 —— 同一个状态在两个页面颜色略有出入，
+   用户会以为那是两种不同的状态。 */
+.pdp-c.busy {
+  background: var(--warn-bg);
+  border-color: var(--warn-border);
+  color: var(--warn-text);
+}
+
+.pdp-c.easy {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-text);
+}
 
 .pdp-hint {
   margin-top: 6px;

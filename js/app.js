@@ -1294,6 +1294,30 @@
         <span class="ax" data-close-alert>✕</span>
       </div>
 
+      <!-- 工作组级条件放在项目查询与项目表格之前：先交代「在给哪个工作组设条件、
+           这一组整体的上限是多少」，再往下看逐项目、逐设备的条件。
+           顺带补上这一页此前的缺陷 —— 它从不显示自己作用于哪个工作组。 -->
+      <div class="group-cond">
+        <div class="gc-head">
+          <span class="gc-title">${GROUP_CONDITION.title}</span>
+          <span class="gc-scope">${WORKGROUP.label} · ${WORKGROUP.size} 人</span>
+        </div>
+        <div class="gc-body">
+          <div class="field">
+            <span class="field-label">${GROUP_CONDITION.label}</span>
+            ${numInput(GROUP_CONDITION.value, GROUP_CONDITION.unit, 'groupMaxPerHead')}
+            ${help(GROUP_CONDITION.tip)}
+          </div>
+          <span class="gc-derived">
+            <span class="gcd-k">${GROUP_CONDITION.capacityKey}</span>
+            <b id="gcCapacity">${GROUP_CONDITION.value * WORKGROUP.size}</b>
+            <span class="gcd-u">台</span>
+            <span class="gcd-note">${GROUP_CONDITION.capacityNote(WORKGROUP.size)}</span>
+          </span>
+        </div>
+        <div class="gc-note">${GROUP_CONDITION.note}</div>
+      </div>
+
       <div class="filterbar">
         <div class="field">
           <span class="field-label">项目信息</span>
@@ -1354,6 +1378,25 @@
         ex.textContent = showing ? '+' : '−';
       });
     });
+
+    /* 人均上限改了，「当日最大承载」要当场跟着变 ——
+       推导值不响应就只是个装饰，用户改完还是不知道实际卡在多少台。
+       输入非法（空 / 0 / 负数）时显示「—」而不是算出 0 台：
+       0 台是个看起来合法的数字，会被当成真的产能上限读。 */
+    const per = $('#groupMaxPerHead');
+    const cap = $('#gcCapacity');
+    if (per && cap) {
+      const sync = () => {
+        const v = parseInt(per.value, 10);
+        cap.textContent = (!v || v < 1) ? '—' : v * WORKGROUP.size;
+      };
+      per.addEventListener('input', sync);
+      /* 失焦时把非法值补回最小值 1，避免留着一个空输入框就离开这一页 */
+      per.addEventListener('blur', () => {
+        const v = parseInt(per.value, 10);
+        if (!v || v < 1) { per.value = 1; sync(); }
+      });
+    }
 
     const cb = $('#btnCondConfirm');
     if (cb) cb.addEventListener('click', confirmConditions);

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<!-- 本文件由 build.js 自动生成（2026-10-14 03:36:11），已内联全部样式与脚本，
+<!-- 本文件由 build.js 自动生成（2026-10-14 05:31:40），已内联全部样式与脚本，
      可直接双击打开或发送给他人，无需任何外部文件与网络。
      请勿直接编辑此文件 —— 改动请在 css/ 与 js/ 下进行，然后重新执行 node build.js -->
 <meta charset="UTF-8" />
@@ -2683,6 +2683,71 @@ body.plan-c .cal-val.none {
   line-height: 1.6;
 }
 
+/* ===================== 工作组级编排条件 =====================
+   条件页此前只有项目级（表格行）和设备级（展开行）两层可编辑，
+   工作组这一层在数据上已经存在（整页按工作组取数）却没有界面。
+   这个区块补上那一层，同时交代「这一页在给哪个工作组设条件」。
+
+   做成浅色卡片而不是又一条 filterbar：它是设置项不是查询条件，
+   视觉上要和下面的项目查询区分开，否则会被当成筛选器。 */
+.group-cond {
+  margin-bottom: 14px;
+  padding: 12px 16px 11px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-lg);
+  background: var(--bg-head);
+}
+
+.gc-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.gc-title { font-size: 14px; font-weight: 600; color: var(--text); }
+
+/* 工作组名称与人数：这一页的作用域，弱化但必须在 */
+.gc-scope { font-size: 12px; color: var(--text-3); }
+
+.gc-body {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+/* 推导出来的承载量。用分隔线和输入项断开 ——
+   它不是另一个可填字段，是上一个字段的结果，不能长得像输入项。 */
+.gc-derived {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding-left: 18px;
+  border-left: 1px solid var(--border-2);
+}
+
+.gcd-k { font-size: 13px; color: var(--text-3); }
+
+.gcd-k::after { content: '='; margin-left: 6px; color: var(--text-4); }
+
+.gc-derived b {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--primary-active);
+  font-variant-numeric: tabular-nums;
+}
+
+.gcd-u { font-size: 13px; color: var(--text-2); }
+.gcd-note { font-size: 12px; color: var(--text-4); }
+
+.gc-note { margin-top: 9px; font-size: 12px; color: var(--text-4); line-height: 1.6; }
+
+@media (max-width: 1100px) {
+  .gc-derived { padding-left: 0; border-left: 0; }
+}
+
 </style>
 </head>
 <body>
@@ -3151,11 +3216,51 @@ const ADJUST = {
 };
 
 /* ------------------------------ 智能编排条件设置（截图 7 / 8） ------------------------------ */
+/* 工作组。名称原先在 9 处硬编码，这里先把条件页要用的那份抽出来 ——
+   人数由成员列表推导，不单独写一个数字：写死的话和「人员安排」里的
+   成员记录（赵波 / 张文字）迟早对不上。 */
+const WORKGROUP = {
+  code: 'KCCW0012',
+  members: ['赵波', '张文字'],
+};
+WORKGROUP.label = `${WORKGROUP.code}（${WORKGROUP.members.join(' ')}）`;
+WORKGROUP.size = WORKGROUP.members.length;
+
 /* 单日最大保养台量：按项目逐个设置的产能上限，取值见 CONDITION_PROJECTS.maxDaily */
 const MAX_DAILY_UNITS = {
   label: '单日最大保养台量',
   unit: '台',
-  tip: '限制该项目单日可安排的最大保养台数，超出部分顺延至其他日期。',
+  /* 明确写出两个上限同时生效，否则一定会有人问
+     「我这个项目设了 20 台，为什么只排了 16 台」 */
+  tip: '限制该项目单日可安排的最大保养台数，超出部分顺延至其他日期。'
+    + '与工作组的「单日人均最大台量」同时生效，取更严格者。',
+};
+
+/* 工作组级编排条件。
+   这一页本来就是按工作组取数的（顶部提示写着「已为您选择的工作组所有项目
+   填充了默认的条件」），但此前界面上既没有工作组的名字，也没有任何
+   工作组级的字段 —— 项目级、设备级都有，工作组这一层是空的。
+   新约束「单日人均最大台量」属于人力侧的承载，不是项目属性，正好落在这一层。
+
+   与项目级的「单日最大保养台量」是两把不同的尺子：
+     项目级 —— 这个项目一天最多接多少台（现场 / 客户侧承载）
+     工作组级 —— 这组人一天每人最多干多少台（人力侧承载）
+   两者同时生效，取更严格者。 */
+const GROUP_CONDITION = {
+  title: '工作组编排条件',
+  label: '单日人均最大台量',
+  unit: '台/人',
+  /* 默认 8：当前数据里最大人均保养量是 10.2 台，设 8 才真的会卡住，
+     约束不起作用的默认值等于没有这个约束 */
+  value: 8,
+  tip: '限制工作组内每人单日可安排的最大保养台数。'
+    + '与项目的「单日最大保养台量」同时生效，取更严格者。',
+  capacityKey: '当日最大承载',
+  /* 推导值必须写出来：可用人数由「人员安排」决定，两个页面是乘法关系。
+     不把乘积摆出来，用户改完人均值并不知道实际卡在多少台 ——
+     而他改这个值的动机通常正是想知道这件事。 */
+  capacityNote: (n) => `按 ${n} 人可用计算`,
+  note: '可用人数以「人员安排」中的当日安排为准，实际承载随当日可用人数变化',
 };
 
 const CONDITION_TIP =
@@ -3530,8 +3635,11 @@ const PLAN_D_FALLBACK = {
       why: '93 台设备的可保养日期集中在周一至周三，无法同时满足',
     },
     {
-      name: '单日最大保养台量 ≤ 45 台',
-      why: '放宽至 58 台，否则 10 月第 2 周排不下',
+      /* 引用工作组级约束而不是项目级的。原先写「单日最大保养台量 ≤ 45 台」，
+         但 45 对不上任何一个项目（最大的项目上限是 20 台）—— 它本来就是个
+         工作组级的数，工作组级约束加上之后这段才自洽。 */
+      name: `${GROUP_CONDITION.label} ≤ ${GROUP_CONDITION.value} ${GROUP_CONDITION.unit}`,
+      why: `放宽至 ${GROUP_CONDITION.value + 3} ${GROUP_CONDITION.unit}，否则 10 月第 2 周排不下`,
     },
     {
       name: '动态保养间隔 14 天 ±2 天',
@@ -5032,6 +5140,30 @@ const PROTO_SCREENS = [
         <span class="ax" data-close-alert>✕</span>
       </div>
 
+      <!-- 工作组级条件放在项目查询与项目表格之前：先交代「在给哪个工作组设条件、
+           这一组整体的上限是多少」，再往下看逐项目、逐设备的条件。
+           顺带补上这一页此前的缺陷 —— 它从不显示自己作用于哪个工作组。 -->
+      <div class="group-cond">
+        <div class="gc-head">
+          <span class="gc-title">${GROUP_CONDITION.title}</span>
+          <span class="gc-scope">${WORKGROUP.label} · ${WORKGROUP.size} 人</span>
+        </div>
+        <div class="gc-body">
+          <div class="field">
+            <span class="field-label">${GROUP_CONDITION.label}</span>
+            ${numInput(GROUP_CONDITION.value, GROUP_CONDITION.unit, 'groupMaxPerHead')}
+            ${help(GROUP_CONDITION.tip)}
+          </div>
+          <span class="gc-derived">
+            <span class="gcd-k">${GROUP_CONDITION.capacityKey}</span>
+            <b id="gcCapacity">${GROUP_CONDITION.value * WORKGROUP.size}</b>
+            <span class="gcd-u">台</span>
+            <span class="gcd-note">${GROUP_CONDITION.capacityNote(WORKGROUP.size)}</span>
+          </span>
+        </div>
+        <div class="gc-note">${GROUP_CONDITION.note}</div>
+      </div>
+
       <div class="filterbar">
         <div class="field">
           <span class="field-label">项目信息</span>
@@ -5092,6 +5224,25 @@ const PROTO_SCREENS = [
         ex.textContent = showing ? '+' : '−';
       });
     });
+
+    /* 人均上限改了，「当日最大承载」要当场跟着变 ——
+       推导值不响应就只是个装饰，用户改完还是不知道实际卡在多少台。
+       输入非法（空 / 0 / 负数）时显示「—」而不是算出 0 台：
+       0 台是个看起来合法的数字，会被当成真的产能上限读。 */
+    const per = $('#groupMaxPerHead');
+    const cap = $('#gcCapacity');
+    if (per && cap) {
+      const sync = () => {
+        const v = parseInt(per.value, 10);
+        cap.textContent = (!v || v < 1) ? '—' : v * WORKGROUP.size;
+      };
+      per.addEventListener('input', sync);
+      /* 失焦时把非法值补回最小值 1，避免留着一个空输入框就离开这一页 */
+      per.addEventListener('blur', () => {
+        const v = parseInt(per.value, 10);
+        if (!v || v < 1) { per.value = 1; sync(); }
+      });
+    }
 
     const cb = $('#btnCondConfirm');
     if (cb) cb.addEventListener('click', confirmConditions);

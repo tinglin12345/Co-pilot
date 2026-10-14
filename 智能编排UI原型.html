@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<!-- 本文件由 build.js 自动生成（2026-10-14 06:31:36），已内联全部样式与脚本，
+<!-- 本文件由 build.js 自动生成（2026-10-14 06:40:03），已内联全部样式与脚本，
      可直接双击打开或发送给他人，无需任何外部文件与网络。
      请勿直接编辑此文件 —— 改动请在 css/ 与 js/ 下进行，然后重新执行 node build.js -->
 <meta charset="UTF-8" />
@@ -454,6 +454,17 @@ svg { display: block; }
 .control .caret svg { width: 11px; height: 11px; stroke: currentColor; fill: none; stroke-width: 2; }
 
 .control.open { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(5, 145, 255, .1); }
+
+/* 固定值展示（staticField）：外观和 .control 一致，但要让人一眼知道
+   这里点不动——没有 caret 腾出的位置，边框 hover 时不变色，
+   鼠标也不是手型。背景比正常输入框压暗一档（用 --bg-head，
+   和锁定状态的输入框是同一个视觉语言），比单纯去掉 caret 更明确。 */
+.control-static {
+  cursor: default;
+  background: var(--bg-head);
+}
+
+.control-static:hover { border-color: var(--border-2); }
 
 .control-w-sm { width: 120px; }
 .control-w-md { width: 180px; }
@@ -4131,6 +4142,20 @@ const PROTO_SCREENS = [
     </div>`;
   }
 
+  /* 固定值展示，长得像 dd() 但不可点开。
+     用户目前只有一个工作组，「工作组」这个筛选字段在五处页面里其实都是
+     伪装成下拉的单选项——传了选项列表，点开后也就那一个，选不出别的。
+     这种「看起来能选、点开发现没得选」比干脆告诉用户「这个不能改」更差：
+     前者让人以为自己操作错了，后者是明确的事实陈述。
+     没有 caret、cursor 不是 pointer、也不挂 data-dd（initWidgets 不会
+     给它接点击展开），纯粹是只读信息。 */
+  function staticField(value, width) {
+    const w = width || 'control-w-md';
+    return `<div class="control ${w} control-static">
+      <span class="val">${value}</span>
+    </div>`;
+  }
+
   /* 读取下拉当前值（占位态返回空串） */
   function ddValue(ctl) {
     const v = $('.val', ctl);
@@ -4743,7 +4768,7 @@ const PROTO_SCREENS = [
       <div class="filterbar">
         <div class="field">
           <span class="field-label">工作组</span>
-          ${dd('KCCW0012(赵波 张…', ['KCCW0012(赵波 张文字)'], 'control-w-md')}
+          ${staticField('KCCW0012(赵波 张…', 'control-w-md')}
         </div>
         <div class="field">
           <span class="field-label">项目信息</span>
@@ -5310,7 +5335,7 @@ const PROTO_SCREENS = [
       <div class="filterbar">
         <div class="field">
           <span class="field-label">工作组</span>
-          ${dd('赵波 张文字（KCCW0012）', ['赵波 张文字（KCCW0012）'], 'control-w-xl')}
+          ${staticField('赵波 张文字（KCCW0012）', 'control-w-xl')}
         </div>
         <div class="field">
           <span class="field-label">类型</span>
@@ -5741,7 +5766,7 @@ const PROTO_SCREENS = [
           <div class="filterbar">
             <div class="field">
               <span class="field-label">工作组</span>
-              ${dd('KCCW0012(赵波 张…', ['KCCW0012(赵波 张文字)'], 'control-w-md')}
+              ${staticField('KCCW0012(赵波 张…', 'control-w-md')}
             </div>
             <div class="field">
               <span class="field-label">项目信息</span>
@@ -5825,7 +5850,7 @@ const PROTO_SCREENS = [
           <div class="filterbar">
             <div class="field">
               <span class="field-label">工作组</span>
-              ${dd('KCCW0012(赵波 张…', ['KCCW0012(赵波 张文字)'], 'control-w-md')}
+              ${staticField('KCCW0012(赵波 张…', 'control-w-md')}
             </div>
             <div class="field">
               <span class="field-label">项目信息</span>
@@ -6796,7 +6821,7 @@ const PROTO_SCREENS = [
           <div class="filterbar">
             <div class="field">
               <span class="field-label">工作组</span>
-              ${dd('赵波 张文字（KCCW0012）', ['赵波 张文字（KCCW0012）'], 'control-w-xl')}
+              ${staticField('赵波 张文字（KCCW0012）', 'control-w-xl')}
             </div>
             <div class="field">
               <span class="field-label">操作</span>

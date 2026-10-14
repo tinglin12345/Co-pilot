@@ -93,6 +93,17 @@
 
 .control.open { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(5, 145, 255, .1); }
 
+/* 固定值展示（staticField）：外观和 .control 一致，但要让人一眼知道
+   这里点不动——没有 caret 腾出的位置，边框 hover 时不变色，
+   鼠标也不是手型。背景比正常输入框压暗一档（用 --bg-head，
+   和锁定状态的输入框是同一个视觉语言），比单纯去掉 caret 更明确。 */
+.control-static {
+  cursor: default;
+  background: var(--bg-head);
+}
+
+.control-static:hover { border-color: var(--border-2); }
+
 .control-w-sm { width: 120px; }
 .control-w-md { width: 180px; }
 .control-w-lg { width: 220px; }

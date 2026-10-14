@@ -257,6 +257,20 @@
     </div>`;
   }
 
+  /* 固定值展示，长得像 dd() 但不可点开。
+     用户目前只有一个工作组，「工作组」这个筛选字段在五处页面里其实都是
+     伪装成下拉的单选项——传了选项列表，点开后也就那一个，选不出别的。
+     这种「看起来能选、点开发现没得选」比干脆告诉用户「这个不能改」更差：
+     前者让人以为自己操作错了，后者是明确的事实陈述。
+     没有 caret、cursor 不是 pointer、也不挂 data-dd（initWidgets 不会
+     给它接点击展开），纯粹是只读信息。 */
+  function staticField(value, width) {
+    const w = width || 'control-w-md';
+    return `<div class="control ${w} control-static">
+      <span class="val">${value}</span>
+    </div>`;
+  }
+
   /* 读取下拉当前值（占位态返回空串） */
   function ddValue(ctl) {
     const v = $('.val', ctl);
@@ -869,7 +883,7 @@
       <div class="filterbar">
         <div class="field">
           <span class="field-label">工作组</span>
-          ${dd('KCCW0012(赵波 张…', ['KCCW0012(赵波 张文字)'], 'control-w-md')}
+          ${staticField('KCCW0012(赵波 张…', 'control-w-md')}
         </div>
         <div class="field">
           <span class="field-label">项目信息</span>
@@ -1436,7 +1450,7 @@
       <div class="filterbar">
         <div class="field">
           <span class="field-label">工作组</span>
-          ${dd('赵波 张文字（KCCW0012）', ['赵波 张文字（KCCW0012）'], 'control-w-xl')}
+          ${staticField('赵波 张文字（KCCW0012）', 'control-w-xl')}
         </div>
         <div class="field">
           <span class="field-label">类型</span>
@@ -1867,7 +1881,7 @@
           <div class="filterbar">
             <div class="field">
               <span class="field-label">工作组</span>
-              ${dd('KCCW0012(赵波 张…', ['KCCW0012(赵波 张文字)'], 'control-w-md')}
+              ${staticField('KCCW0012(赵波 张…', 'control-w-md')}
             </div>
             <div class="field">
               <span class="field-label">项目信息</span>
@@ -1951,7 +1965,7 @@
           <div class="filterbar">
             <div class="field">
               <span class="field-label">工作组</span>
-              ${dd('KCCW0012(赵波 张…', ['KCCW0012(赵波 张文字)'], 'control-w-md')}
+              ${staticField('KCCW0012(赵波 张…', 'control-w-md')}
             </div>
             <div class="field">
               <span class="field-label">项目信息</span>
@@ -2922,7 +2936,7 @@
           <div class="filterbar">
             <div class="field">
               <span class="field-label">工作组</span>
-              ${dd('赵波 张文字（KCCW0012）', ['赵波 张文字（KCCW0012）'], 'control-w-xl')}
+              ${staticField('赵波 张文字（KCCW0012）', 'control-w-xl')}
             </div>
             <div class="field">
               <span class="field-label">操作</span>

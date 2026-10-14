@@ -1334,10 +1334,13 @@
         </span>
 
         <!-- 工作组级约束：当前唯一一条，承载值并入 tip，不再单独占位。
+             不再挂「工作组条件」这个 .ctb-tag 分类徽记——模块标题
+             「工作组设置」已经说明了这一整块是什么，工具条内部再重复
+             一遍同一层归类信息是冗余的。「高级功能」仍然保留：它和
+             左边这组不是同一类（低频、独立开关），需要用标签把两者分开。
              错误提示挂在输入框右侧，不单独占一行——这条工具条本来就是
              横向一条，错误文字另起一行会把两类彼此独立的分组撑得错位。 -->
         <span class="ctb-group">
-          <span class="ctb-tag">${COND_SECTIONS.group.title}</span>
           <span class="ctb-k">${GROUP_CONDITION.label}${help(
             GROUP_CONDITION.tip(GROUP_CONDITION.value, WORKGROUP.size))}</span>
           ${numInput(GROUP_CONDITION.value, GROUP_CONDITION.unit, 'groupMaxPerHead')}

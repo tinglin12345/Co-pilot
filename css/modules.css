@@ -2321,57 +2321,60 @@ body.plan-c .cal-val.none {
   line-height: 1.6;
 }
 
-/* ===================== 编排条件分区 =====================
-   页面按「作用范围」分成两段：工作组统一 → 逐项目/逐设备。
-   原先三类东西（整组设置 / 逐项目设置 / 表格筛选）平铺在一个竖列里，
-   层级靠读者自己推断，「是否托管」还和「批量编辑」并排在表格工具条上。
+/* ===================== 编排条件工具条 =====================
+   上一版把「作用域 / 工作组约束 / 高级功能」做成三张纵向堆叠的卡片，
+   分类是对的，但每张卡自带标题行+内边距，三段叠完表格就被挤出首屏。
 
-   两段都用带标题的区块，层级因此是显式的；
-   第二段里筛选降级为表格的附属工具条，不再是设置项的同级邻居。 */
-.cond-sec {
-  margin-bottom: 16px;
-  border: 1px solid var(--border-2);
+   这一版把三类信息压进同一条横向工具条：区分感来自竖分隔线
+   （.ctb-div）与弱化小标签（.ctb-tag），不靠卡片边框和背景块，
+   纵向只占一行的高度。 */
+.cond-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  background: #fff;
-  overflow: hidden;
-}
-
-.cs-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding: 11px 16px;
   background: var(--bg-head);
-  border-bottom: 1px solid var(--border);
 }
 
-.cs-head .grow { flex: 1 1 auto; }
+.cond-toolbar .grow { flex: 1 1 auto; }
 
-.cs-title { font-size: 14px; font-weight: 600; color: var(--text); }
-
-/* 副标题就是归类依据本身：「对整个工作组统一生效」/「逐项目设置」。
-   不写出来，用户得靠字段名猜这一段管多大范围。 */
-.cs-sub { font-size: 12px; color: var(--text-3); }
-
-/* 作用域：工作组与编排周期。这一页此前从不说自己作用在哪 */
-.cs-scope { display: inline-flex; gap: 14px; flex-wrap: wrap; }
-.csc-i { font-size: 12px; color: var(--text-3); white-space: nowrap; }
-
-.cs-body {
-  display: flex;
+.ctb-group {
+  display: inline-flex;
   align-items: center;
-  gap: 32px;
+  gap: 8px;
   flex-wrap: wrap;
-  padding: 14px 16px 13px;
 }
 
-/* 一条条件项：键 + 控件（+ 推导值）。
-   键用固定的弱色标签，和表格里的列头是同一种视觉角色。 */
-.cond-item { display: inline-flex; align-items: center; gap: 10px; }
+/* 竖分隔线：三类信息之间唯一的「隔断」，比卡片边框轻得多，
+   足够让人读出「这是另一类东西」而不切断整条工具条的横向连续感 */
+.ctb-div {
+  width: 1px;
+  height: 20px;
+  background: var(--border-2);
+  flex: 0 0 auto;
+}
 
-.ci-k {
-  font-size: 14px;
+/* 作用域纯展示，用次级色，不与下面可编辑的条件抢视觉重量 */
+.ctb-label { font-size: 13px; color: var(--text-2); white-space: nowrap; }
+.ctb-sep { font-size: 12px; color: var(--text-4); }
+
+/* 小标签：弱化的分类徽记，替代原来整行的卡片标题。
+   描边而非实色底，是这条工具条里视觉权重最低的元素。 */
+.ctb-tag {
+  font-size: 11px;
+  color: var(--text-3);
+  padding: 1px 6px;
+  border: 1px solid var(--border-2);
+  border-radius: 9px;
+  white-space: nowrap;
+}
+
+.ctb-k {
+  font-size: 13px;
   color: var(--text);
   white-space: nowrap;
   display: inline-flex;
@@ -2379,16 +2382,21 @@ body.plan-c .cal-val.none {
   gap: 4px;
 }
 
-/* 筛选条：挂在表格之上、区块之内，视觉重量明显低于上面的条件项 ——
-   它不参与提交，只决定表格显示哪些行。 */
+/* 高级功能整组视觉权重再压一档：是这条工具条里最不该抢注意力的部分 */
+.ctb-advanced .ctb-k { color: var(--text-2); font-size: 12px; }
+
+/* 筛选条：原先嵌在卡片内部，现在独立一行紧跟工具条之后，
+   「批量编辑」从卡片标题行降级并入这里的右侧 */
 .cs-filter {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--border);
-  background: #fff;
+  margin-bottom: 10px;
+}
+
+.cs-filter-standalone {
+  padding: 8px 0;
 }
 
 .csf-k {
@@ -2404,35 +2412,33 @@ body.plan-c .cal-val.none {
 
 .cs-filter .field-label { font-size: 13px; color: var(--text-2); }
 
-/* 区块内的表格自己已有边框感，去掉外层圆角造成的重复描边 */
-.cond-sec .table { margin: 0; }
-
-/* 推导出来的承载量。用分隔线和输入项断开 ——
-   它不是另一个可填字段，是上一个字段的结果，不能长得像输入项。 */
+/* 推导出来的承载量。用分隔线断开 —— 它不是另一个可填字段，
+   是上一个字段的结果，不能长得像输入项。 */
 .gc-derived {
   display: inline-flex;
   align-items: baseline;
   gap: 6px;
-  padding-left: 18px;
+  padding-left: 14px;
   border-left: 1px solid var(--border-2);
 }
 
-.gcd-k { font-size: 13px; color: var(--text-3); }
-
-.gcd-k::after { content: '='; margin-left: 6px; color: var(--text-4); }
+.gcd-k { font-size: 12px; color: var(--text-3); }
+.gcd-k::after { content: '='; margin-left: 5px; color: var(--text-4); }
 
 .gc-derived b {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--primary-active);
   font-variant-numeric: tabular-nums;
 }
 
-.gcd-u { font-size: 13px; color: var(--text-2); }
-.gcd-note { font-size: 12px; color: var(--text-4); }
+.gcd-u { font-size: 12px; color: var(--text-2); }
 
-
-
+/* 阈值按内容区宽度定，不是视口宽度 —— 1600px 视口减掉侧栏后内容区
+   常落在 1300~1350px，用 1280 当断点会在完全正常的桌面宽度下
+   就触发降级，所以收到 1100px，只覆盖真正逼仄的场合 */
 @media (max-width: 1100px) {
-  .gc-derived { padding-left: 0; border-left: 0; }
+  .cond-toolbar { gap: 10px; }
+  .ctb-div { display: none; }
+  .cond-toolbar .ctb-group:first-child { flex-basis: 100%; }
 }

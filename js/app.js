@@ -1294,110 +1294,91 @@
         <span class="ax" data-close-alert>✕</span>
       </div>
 
-      <!-- 这一页原先把三类不同性质的东西平铺在一个竖列里：
-             整组统一的设置（是否托管）、逐项目的设置（表格）、以及只影响
-             表格显示的筛选（项目信息 / 动态保养间隔）。
-           其中「是否托管」还和「批量编辑」并排挂在表格工具条上，看起来像
-           表格的显示选项，实际它是整组统一的自动化开关。
+      <!-- 上一版把三类信息做成三张独立卡片竖向堆叠（工作组条件 / 项目与
+           设备条件 / 高级功能），分类依据没错，但每段都有自己的标题行+
+           内边距，三段加上表格之后首屏只能看到不到一半的项目列表 ——
+           纵向开销买来的是「看起来更规整」，代价是最常用的表格被挤到
+           下一屏。
 
-           现在按「作用范围 + 使用频率」归成三段：
-             ① 工作组条件（高频，常用的产能约束）
-             ② 项目与设备条件（逐项目/逐设备）
-             ③ 高级功能（低频，影响面大的整组开关）
-           「是否托管」单独成段：它不是一条「限制多少」的约束，而是
-           「要不要让系统自动调整整组编排」这种一次设置、长期生效、
-           影响面覆盖全组的开关，和「单日人均最大台量」放在同一行
-           反而会让人以为两者是同类设置、同样需要常改。
-           筛选不是条件，降级为表格自己的附属工具条并显式标注，
-           因为「项目信息」「动态保养间隔」这两个名字在筛选区和下面的
-           表格里各出现一次、形态还都是输入控件，不标明谁是过滤器会混。 -->
+           这一版把分类依据保留（作用域 / 工作组级约束 / 高级功能），
+           但不再用卡片去装它们：三类信息压进同一条顶部工具条，
+           横向排布、靠竖分隔线 + 弱化小标签制造「有区分但不隔断」的
+           视觉效果。工具条本身只占一行的高度，筛选条和表格紧跟着就
+           露出来，三类信息 + 表格因此能一起进入首屏。
 
-      <!-- ① 工作组条件：高频使用的产能约束 -->
-      <section class="cond-sec">
-        <div class="cs-head">
-          <span class="cs-title">${COND_SECTIONS.group.title}</span>
-          <span class="cs-sub">${COND_SECTIONS.group.sub}</span>
-          <div class="grow"></div>
-          <span class="cs-scope">
-            <span class="csc-i">${WORKGROUP.label} · ${WORKGROUP.size} 人</span>
-            <span class="csc-i">编排周期 ${rangeLabel(CAL_PLAN)}</span>
+           「高级功能」只剩「是否托管」一个开关，专门为它单开一张卡片
+           的性价比太低，收进工具条最右侧，用更弱的视觉权重（无底色、
+           纯图标+开关）体现「低频、不是本页主角」。 -->
+      <div class="cond-toolbar">
+        <!-- 作用域：工作组是谁、编排周期多长。纯信息，不接受编辑 -->
+        <span class="ctb-group">
+          <span class="ctb-label">${WORKGROUP.label}</span>
+          <span class="ctb-sep">·</span>
+          <span class="ctb-label">${WORKGROUP.size} 人</span>
+          <span class="ctb-sep">·</span>
+          <span class="ctb-label">编排周期 ${rangeLabel(CAL_PLAN)}</span>
+        </span>
+
+        <span class="ctb-div"></span>
+
+        <!-- 工作组级约束：当前唯一一条，用「台/人」输入 + 推导承载量表达 -->
+        <span class="ctb-group">
+          <span class="ctb-tag">${COND_SECTIONS.group.title}</span>
+          <span class="ctb-k">${GROUP_CONDITION.label}${help(GROUP_CONDITION.tip)}</span>
+          ${numInput(GROUP_CONDITION.value, GROUP_CONDITION.unit, 'groupMaxPerHead')}
+          <span class="gc-derived">
+            <span class="gcd-k">${GROUP_CONDITION.capacityKey}</span>
+            <b id="gcCapacity">${GROUP_CONDITION.value * WORKGROUP.size}</b>
+            <span class="gcd-u">台</span>
           </span>
-        </div>
-        <div class="cs-body">
-          <div class="cond-item">
-            <span class="ci-k">${GROUP_CONDITION.label}${help(GROUP_CONDITION.tip)}</span>
-            ${numInput(GROUP_CONDITION.value, GROUP_CONDITION.unit, 'groupMaxPerHead')}
-            <span class="gc-derived">
-              <span class="gcd-k">${GROUP_CONDITION.capacityKey}</span>
-              <b id="gcCapacity">${GROUP_CONDITION.value * WORKGROUP.size}</b>
-              <span class="gcd-u">台</span>
-              <span class="gcd-note">${GROUP_CONDITION.capacityNote(WORKGROUP.size)}</span>
-            </span>
-          </div>
-        </div>
-      </section>
+        </span>
 
-      <!-- ② 逐项目 / 逐设备的条件 -->
-      <section class="cond-sec">
-        <div class="cs-head">
-          <span class="cs-title">${COND_SECTIONS.project.title}</span>
-          <span class="cs-sub">${COND_SECTIONS.project.sub}</span>
-          <div class="grow"></div>
-          <button class="btn btn-primary btn-sm">批量编辑</button>
-        </div>
+        <div class="grow"></div>
 
-        <!-- 筛选：只影响下面表格看到哪些行，不参与提交。
-             显式打上「筛选」标签，与上面的条件项区分开。 -->
-        <div class="cs-filter">
-          <span class="csf-k">${COND_SECTIONS.filterKey}</span>
-          <div class="field">
-            <span class="field-label">项目信息</span>
-            ${dd('', [], 'control-w-lg', '请输入项目名称或项目编号')}
-          </div>
-          <div class="field">
-            <span class="field-label">动态保养间隔</span>
-            ${dd('', ['是', '否'], 'control-w-sm', '请选择')}
-          </div>
-          <button class="btn btn-sm">重 置</button>
-          <button class="btn btn-sm btn-primary">查 询</button>
-          <div class="grow"></div>
-          <span class="csf-n">${COND_SECTIONS.filterNote}</span>
-        </div>
+        <!-- 高级功能：低频、整组生效，视觉权重刻意调到最弱 -->
+        <span class="ctb-group ctb-advanced">
+          <span class="ctb-tag">${COND_SECTIONS.advanced.title}</span>
+          <span class="ctb-k">是否托管${help(CONDITION_TIP)}</span>
+          <span class="switch" data-switch></span>
+        </span>
+      </div>
 
-        <table class="table" id="condTable">
-          <thead>
-            <tr>
-              <th class="col-narrow"></th>
-              <th class="col-narrow"><span class="checkbox"><span class="check-box"></span></span></th>
-              <th>项目信息</th>
-              <th>项目编号</th>
-              <th>项目地址</th>
-              <th>设备台数</th>
-              <th class="col-nowrap">
-                <span class="th-help">${MAX_DAILY_UNITS.label}${help(MAX_DAILY_UNITS.tip)}</span>
-              </th>
-              <th class="col-actions">操作</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </section>
+      <!-- 项目与设备条件：原来的卡片标题（「批量编辑」入口）降级并到
+           筛选条右侧，不再单独占一整行 -->
+      <div class="cs-filter cs-filter-standalone">
+        <span class="csf-k">${COND_SECTIONS.filterKey}</span>
+        <div class="field">
+          <span class="field-label">项目信息</span>
+          ${dd('', [], 'control-w-lg', '请输入项目名称或项目编号')}
+        </div>
+        <div class="field">
+          <span class="field-label">动态保养间隔</span>
+          ${dd('', ['是', '否'], 'control-w-sm', '请选择')}
+        </div>
+        <button class="btn btn-sm">重 置</button>
+        <button class="btn btn-sm btn-primary">查 询</button>
+        <div class="grow"></div>
+        <span class="csf-n">${COND_SECTIONS.filterNote}</span>
+        <button class="btn btn-primary btn-sm">批量编辑</button>
+      </div>
 
-      <!-- ③ 高级功能：低频、影响面覆盖整个工作组的开关。
-           排在最后而不是最前 —— 常用的产能约束该最先被看到，
-           「是否托管」是一次设置、长期不动的东西，不该抢占首屏位置。 -->
-      <section class="cond-sec">
-        <div class="cs-head">
-          <span class="cs-title">${COND_SECTIONS.advanced.title}</span>
-          <span class="cs-sub">${COND_SECTIONS.advanced.sub}</span>
-        </div>
-        <div class="cs-body">
-          <div class="cond-item">
-            <span class="ci-k">是否托管${help(CONDITION_TIP)}</span>
-            <span class="switch" data-switch></span>
-          </div>
-        </div>
-      </section>
+      <table class="table" id="condTable">
+        <thead>
+          <tr>
+            <th class="col-narrow"></th>
+            <th class="col-narrow"><span class="checkbox"><span class="check-box"></span></span></th>
+            <th>项目信息</th>
+            <th>项目编号</th>
+            <th>项目地址</th>
+            <th>设备台数</th>
+            <th class="col-nowrap">
+              <span class="th-help">${MAX_DAILY_UNITS.label}${help(MAX_DAILY_UNITS.tip)}</span>
+            </th>
+            <th class="col-actions">操作</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
 
       <div class="modal-foot center" style="padding-top:18px">
         <button class="btn" data-go="smart">返 回</button>

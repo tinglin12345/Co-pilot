@@ -1538,8 +1538,7 @@
 
      分布只看前 4 周（与预览范围、日历默认档位一致）；
      总量看满 13 周 —— 那才是「总计划工时」该有的口径。 */
-  function planDStat(id) {
-    const rows = CAL_PLAN_D[id];
+  function planRowStat(rows) {
     const vis = rows.slice(0, PLAN_D_PREVIEW_WEEKS).flat().filter((x) => !x.blank);
     const all = rows.flat().filter((x) => !x.blank);
     return {
@@ -1550,42 +1549,53 @@
     };
   }
 
-  /* 指标的优劣着色要两卡互比后才能定 —— 单看一张卡无从判断谁更优，
-     而两张都着色等于都没着色。所以在这里一次算出两边再分配。 */
+  const planDStat = (id) => planRowStat(CAL_PLAN_D[id]);
+  /* 对照基线 = 今天正在执行的计划。与候选方案走同一个函数算，
+     两边口径必然一致 —— 各写一套统计逻辑，迟早出现「同一张日历两个数」。 */
+  const planDBaseline = () => planRowStat(CAL_CURRENT);
+
+  /* 每项指标都给「当前计划 → 该方案 + 变化量」，不再只报绝对值。
+
+     只报绝对值的话，主管能比出 A 和 B 谁强，却看不出任何一个相对
+     今天正在执行的计划是改善还是恶化 —— 而「这轮编排到底值不值得应用」
+     才是他真正要下的判断。
+
+     沿用对比页 KPI 条那套 deltaLine + sd-key 写法，不另造一种涨跌表达：
+     同一个「当前 → 新值」的概念在两个页面长得不一样是没必要的学习成本。
+     轻松 / 繁重的语义色也由 .sd-key 自带（含色块前缀）。 */
   function planDMetrics(id) {
     const me = planDStat(id);
-    const other = planDStat(id === 'balanced' ? 'shorter' : 'balanced');
+    const base = planDBaseline();
     const cand = planDCandidate(id);
-
-    const tone = (mine, theirs, better) => {
-      if (mine === theirs) return '';
-      const win = better === 'down' ? mine < theirs : mine > theirs;
-      return win ? 'good' : 'bad';
-    };
+    /* 人均工时算不出来（取决于人员编制），当前值从既有的 KPI 对比数据里取，
+       不另写一个常量 —— 同一个数字在两处各写一遍必然会分叉 */
+    const basePeak = (PLAN_DELTA_STATS
+      .find((s) => s.label === '最大人均计划工时') || {}).from;
 
     return [
       {
-        /* 轻松与繁重各自按语义着色（绿 / 橙），和图例、下面的预览日历同一套配色。
-
-           这里刻意放弃了「整行按两卡优劣着色」的做法：同一行既要表达
-           「这是轻松那是繁重」，又要表达「这张卡在这项上更优」，两套含义
-           挤在一个颜色里必然有一个读错 —— 而和日历对齐的语义色更要紧，
-           谁的轻松天数多，看数字就知道。 */
         label: '工作量分布',
-        value: `<span class="pd-lv easy">轻松 ${me.easy} 天</span>`
-          + `<span class="pd-lv-sep">/</span>`
-          + `<span class="pd-lv busy">繁重 ${me.busy} 天</span>`,
+        /* 两行：轻松越多越好，繁重越少越好。方向与对比页 KPI 条完全一致。 */
+        group: [
+          { key: 'easy', text: '轻松', html: deltaLine(base.easy, me.easy, '天', 'up') },
+          { key: 'busy', text: '繁重', html: deltaLine(base.busy, me.busy, '天', 'down') },
+        ],
       },
-      { label: '最大人均计划工时', value: cand.peakPerHead },
+      {
+        label: '最大人均计划工时',
+        delta: deltaLine(basePeak, cand.peakHours, '小时', 'down'),
+      },
       {
         label: '总计划工时',
-        value: `${me.hours} 小时`,
-        tone: tone(me.hours, other.hours, 'down'),
+        delta: deltaLine(base.hours, me.hours, '小时', 'down'),
       },
-      /* 两个方向的台量必然相同（要做的活没变，变的只是怎么排）。
-         放进来不是为了比大小，而是把这件事说清楚 —— 否则看到总工时
-         有差会以为是漏排了设备。 */
-      { label: '总保养台量', value: `${me.units} 台` },
+      {
+        /* 台量不给优劣方向：活是客观要做的，多一台不叫恶化、少一台不叫改善。
+           两个方向的台量也必然相同（要做的活没变，变的只是怎么排）——
+           摆出来是为了说清这件事，否则看到总工时有差会以为漏排了设备。 */
+        label: '总保养台量',
+        delta: deltaLine(base.units, me.units, '台', null),
+      },
     ];
   }
 
@@ -1645,11 +1655,18 @@
      卡片消失了就只剩一个选项，反而像是算法只给了一种方案。 */
   function planDCardHtml(c) {
     const out = isCandidateOut(c.id);
-    const metrics = planDMetrics(c.id).map((m) => `
+    const metrics = planDMetrics(c.id).map((m) => {
+      /* 三种形态：两行分组（工作量分布）/ 单行涨跌 / 纯文本兜底 */
+      const body = m.group
+        ? `<span class="stat-delta-group pd-mgroup">${m.group.map((g) =>
+          `<span class="sd-key ${g.key}">${g.text}</span>${g.html}`).join('')}</span>`
+        : (m.delta || `<span class="pd-mv">${m.value}</span>`);
+      return `
           <div class="pd-metric">
             <span class="pd-mk">${m.label}</span>
-            <span class="pd-mv ${m.tone || ''}">${m.value}</span>
-          </div>`).join('');
+            ${body}
+          </div>`;
+    }).join('');
 
     return `
       <div class="pd-card ${out ? 'out' : ''}" data-pd-card="${c.id}">

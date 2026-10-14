@@ -694,7 +694,9 @@ const PLAN_D_CANDIDATES = [
     name: '工单均衡分布',
     sub: '把工单尽量摊平到每一天',
     recommend: true,
-    peakPerHead: '17.54 小时',
+    /* 存成数字而不是「17.54 小时」字符串：卡片要和当前计划做涨跌对比，
+       字符串没法参与计算 */
+    peakHours: 17.54,
     good: '每天工作量接近，排班压力平稳，现场好执行',
     bad: '总工时偏高，同一项目的设备会分散到不同日期',
   },
@@ -702,7 +704,7 @@ const PLAN_D_CANDIDATES = [
     id: 'shorter',
     name: '总工时更短',
     sub: '压缩总工时与重复路途',
-    peakPerHead: '23.10 小时',
+    peakHours: 23.1,
     good: '同一项目的设备尽量排在同一天，省掉重复路途与进场准备',
     bad: '活变得集中，单日负荷高，排班与现场执行的压力都更大',
   },

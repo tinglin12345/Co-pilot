@@ -1981,6 +1981,20 @@ body.plan-c .cal-val.none {
 .pd-card.out .pd-sub,
 .pd-card.out .pd-mk { color: var(--text-4); }
 
+/* 指标改成涨跌块之后，压灰要落到这些新元素上 ——
+   否则无可行解的卡会顶着一组照常着色的绿橙数字，
+   看起来像「这个方案算出来了」。
+   选择器带 .pd-card.out 前缀即可盖过 .stat-delta-group 的语义色，不用 !important。 */
+.pd-card.out .stat-delta .sd-from,
+.pd-card.out .stat-delta .sd-to,
+.pd-card.out .stat-delta-group .sd-key.easy,
+.pd-card.out .stat-delta-group .sd-key.busy { color: var(--text-4); }
+
+.pd-card.out .stat-delta-group .sd-key.easy::before,
+.pd-card.out .stat-delta-group .sd-key.busy::before { background: var(--text-4); }
+
+.pd-card.out .sd-chip { opacity: .45; }
+
 .pd-card-head { display: flex; align-items: center; gap: 8px; }
 
 .pd-name { font-size: 16px; font-weight: 600; color: var(--text); }
@@ -2033,11 +2047,25 @@ body.plan-c .cal-val.none {
   font-variant-numeric: tabular-nums;
 }
 
-/* 工作量分布那一行：轻松与繁重各自按语义着色，与图例、预览日历同一套。
-   这一行因此不再参与「两卡孰优」的着色 —— 一个颜色表达两种含义必有一个读错。 */
-.pd-lv.easy { color: var(--success-text); }
-.pd-lv.busy { color: var(--warn-text); }
-.pd-lv-sep { margin: 0 5px; color: var(--text-4); font-weight: 400; }
+/* 指标里的「当前 → 新值 + 变化量」。直接复用对比页 KPI 条的
+   .stat-delta / .sd-* / .stat-delta-group，这里只把尺寸收紧一档 ——
+   那边是页面级 KPI，这里是卡片内的一行，照搬原尺寸会把卡片撑散。 */
+.pd-metric .stat-delta { margin-top: 0; gap: 5px; justify-content: flex-end; }
+.pd-metric .stat-delta .sd-from { font-size: 12px; }
+.pd-metric .stat-delta .sd-arrow { font-size: 11px; }
+.pd-metric .stat-delta .sd-to { font-size: 13px; }
+.pd-metric .sd-chip { height: 17px; padding: 0 5px; font-size: 11px; }
+
+/* 工作量分布：轻松 / 繁重两行，前缀标签自带语义色块（.sd-key 已有）。
+   整块右对齐，与上下其他指标的数值列对齐成一条竖线。 */
+.pd-mgroup {
+  margin-top: 0;
+  justify-content: end;
+  grid-template-columns: auto auto;
+  gap: 3px 8px;
+}
+
+.pd-mgroup .sd-to { font-size: 13px; }
 
 /* 指标上的优劣只给这一项真正占优 / 吃亏的那张卡着色 ——
    两张都上色就等于没上色 */

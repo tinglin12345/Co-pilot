@@ -2379,13 +2379,6 @@ body.plan-c .cal-val.none {
   gap: 4px;
 }
 
-.cs-note {
-  padding: 0 16px 12px;
-  font-size: 12px;
-  color: var(--text-4);
-  line-height: 1.6;
-}
-
 /* 筛选条：挂在表格之上、区块之内，视觉重量明显低于上面的条件项 ——
    它不参与提交，只决定表格显示哪些行。 */
 .cs-filter {

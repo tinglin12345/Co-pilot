@@ -1300,12 +1300,19 @@
            其中「是否托管」还和「批量编辑」并排挂在表格工具条上，看起来像
            表格的显示选项，实际它是整组统一的自动化开关。
 
-           现在按「作用范围」归成两段：整组统一 → 逐项目/逐设备。
+           现在按「作用范围 + 使用频率」归成三段：
+             ① 工作组条件（高频，常用的产能约束）
+             ② 项目与设备条件（逐项目/逐设备）
+             ③ 高级功能（低频，影响面大的整组开关）
+           「是否托管」单独成段：它不是一条「限制多少」的约束，而是
+           「要不要让系统自动调整整组编排」这种一次设置、长期生效、
+           影响面覆盖全组的开关，和「单日人均最大台量」放在同一行
+           反而会让人以为两者是同类设置、同样需要常改。
            筛选不是条件，降级为表格自己的附属工具条并显式标注，
            因为「项目信息」「动态保养间隔」这两个名字在筛选区和下面的
            表格里各出现一次、形态还都是输入控件，不标明谁是过滤器会混。 -->
 
-      <!-- ① 整组统一生效的条件 -->
+      <!-- ① 工作组条件：高频使用的产能约束 -->
       <section class="cond-sec">
         <div class="cs-head">
           <span class="cs-title">${COND_SECTIONS.group.title}</span>
@@ -1318,10 +1325,6 @@
         </div>
         <div class="cs-body">
           <div class="cond-item">
-            <span class="ci-k">是否托管${help(CONDITION_TIP)}</span>
-            <span class="switch" data-switch></span>
-          </div>
-          <div class="cond-item">
             <span class="ci-k">${GROUP_CONDITION.label}${help(GROUP_CONDITION.tip)}</span>
             ${numInput(GROUP_CONDITION.value, GROUP_CONDITION.unit, 'groupMaxPerHead')}
             <span class="gc-derived">
@@ -1332,7 +1335,6 @@
             </span>
           </div>
         </div>
-        <div class="cs-note">${GROUP_CONDITION.note}</div>
       </section>
 
       <!-- ② 逐项目 / 逐设备的条件 -->
@@ -1379,6 +1381,22 @@
           </thead>
           <tbody>${rows}</tbody>
         </table>
+      </section>
+
+      <!-- ③ 高级功能：低频、影响面覆盖整个工作组的开关。
+           排在最后而不是最前 —— 常用的产能约束该最先被看到，
+           「是否托管」是一次设置、长期不动的东西，不该抢占首屏位置。 -->
+      <section class="cond-sec">
+        <div class="cs-head">
+          <span class="cs-title">${COND_SECTIONS.advanced.title}</span>
+          <span class="cs-sub">${COND_SECTIONS.advanced.sub}</span>
+        </div>
+        <div class="cs-body">
+          <div class="cond-item">
+            <span class="ci-k">是否托管${help(CONDITION_TIP)}</span>
+            <span class="switch" data-switch></span>
+          </div>
+        </div>
       </section>
 
       <div class="modal-foot center" style="padding-top:18px">

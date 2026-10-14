@@ -104,6 +104,21 @@
 
 .control-static:hover { border-color: var(--border-2); }
 
+/* 真正可打字的文本筛选框（textField）。.control 默认是给点开式控件
+   （下拉/固定展示）用的，cursor: pointer 用在这里会让人以为点一下
+   会弹出什么，实际它就是个普通输入框，光标该是文字输入态。 */
+.control-text {
+  cursor: text;
+}
+
+.control-text::placeholder { color: var(--text-4); }
+
+.control-text:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(5, 145, 255, .1);
+}
+
 .control-w-sm { width: 120px; }
 .control-w-md { width: 180px; }
 .control-w-lg { width: 220px; }

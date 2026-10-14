@@ -257,6 +257,20 @@
     </div>`;
   }
 
+  /* 真正可打字的文本筛选框。此前「项目信息」「设备信息」这类按关键字
+     搜索的筛选项用的是 dd()——传了「请输入项目名称或项目编号」这样
+     的占位文字，但 dd() 渲染的是点开弹选项列表的下拉（底层是 <span>，
+     不是 <input>），而且给的选项是空数组，点开也是个空面板，什么都
+     打不进去。占位文字承诺"能输入"，组件实际上不能，这是文案和控件
+     类型没对上的 bug，不是什么都不显示的设计。
+     这里补一个真正的 <input>，外观继续用 .control 这套样式。 */
+  function textField(placeholder, width, id) {
+    const w = width || 'control-w-md';
+    return `<input type="text" class="control control-text ${w}"
+      placeholder="${(placeholder || '').replace(/"/g, '&quot;')}"
+      ${id ? `id="${id}"` : ''} />`;
+  }
+
   /* 固定值展示，长得像 dd() 但不可点开。
      用户目前只有一个工作组，「工作组」这个筛选字段在五处页面里其实都是
      伪装成下拉的单选项——传了选项列表，点开后也就那一个，选不出别的。
@@ -887,11 +901,11 @@
         </div>
         <div class="field">
           <span class="field-label">项目信息</span>
-          ${dd('', [], 'control-w-lg', '请输入项目名称或项目编号')}
+          ${textField('请输入项目名称或项目编号', 'control-w-lg')}
         </div>
         <div class="field">
           <span class="field-label">设备信息</span>
-          ${dd('', [], 'control-w-lg', '请输入设备编号或客户自编号')}
+          ${textField('请输入设备编号或客户自编号', 'control-w-lg')}
         </div>
         <div class="grow"></div>
         <button class="btn">重 置</button>
@@ -1370,7 +1384,7 @@
       <div class="cs-filter cs-filter-standalone">
         <div class="field">
           <span class="field-label">项目信息</span>
-          ${dd('', [], 'control-w-lg', '请输入项目名称或项目编号')}
+          ${textField('请输入项目名称或项目编号', 'control-w-lg')}
         </div>
         <div class="field">
           <span class="field-label">动态保养间隔</span>
@@ -1941,11 +1955,11 @@
             </div>
             <div class="field">
               <span class="field-label">项目信息</span>
-              ${dd('', [], 'control-w-lg', '请输入项目名称或项目编号')}
+              ${textField('请输入项目名称或项目编号', 'control-w-lg')}
             </div>
             <div class="field">
               <span class="field-label">设备信息</span>
-              ${dd('', [], 'control-w-lg', '请输入设备编号或客户自编号')}
+              ${textField('请输入设备编号或客户自编号', 'control-w-lg')}
             </div>
             <div class="grow"></div>
             <button class="btn">重 置</button>
@@ -2025,11 +2039,11 @@
             </div>
             <div class="field">
               <span class="field-label">项目信息</span>
-              ${dd('', [], 'control-w-lg', '请输入项目名称或项目编号')}
+              ${textField('请输入项目名称或项目编号', 'control-w-lg')}
             </div>
             <div class="field">
               <span class="field-label">设备信息</span>
-              ${dd('', [], 'control-w-lg', '请输入设备编号或客户自编号')}
+              ${textField('请输入设备编号或客户自编号', 'control-w-lg')}
             </div>
             <div class="grow"></div>
             <button class="btn">重 置</button>

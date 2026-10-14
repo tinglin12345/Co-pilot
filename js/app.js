@@ -1294,43 +1294,22 @@
         <span class="ax" data-close-alert>✕</span>
       </div>
 
-      <!-- 上一版把三类信息做成三张独立卡片竖向堆叠（工作组条件 / 项目与
-           设备条件 / 高级功能），分类依据没错，但每段都有自己的标题行+
-           内边距，三段加上表格之后首屏只能看到不到一半的项目列表 ——
-           纵向开销买来的是「看起来更规整」，代价是最常用的表格被挤到
-           下一屏。
+      <!-- 工具条只保留两类会变的信息：工作组级约束 / 高级功能。
+           工作组本身是进这一页之前就选定好的（见顶部提示里的「您选择的
+           工作组」），这里不是切换入口，摆出名称 / 人数 / 周期只是重复
+           一遍已知信息，占了位置却不能编辑，所以去掉这段纯展示作用域。
 
-           这一版把分类依据保留（作用域 / 工作组级约束 / 高级功能），
-           但不再用卡片去装它们：三类信息压进同一条顶部工具条，
-           横向排布、靠竖分隔线 + 弱化小标签制造「有区分但不隔断」的
-           视觉效果。工具条本身只占一行的高度，筛选条和表格紧跟着就
-           露出来，三类信息 + 表格因此能一起进入首屏。
-
-           「高级功能」只剩「是否托管」一个开关，专门为它单开一张卡片
-           的性价比太低，收进工具条最右侧，用更弱的视觉权重（无底色、
-           纯图标+开关）体现「低频、不是本页主角」。 -->
+           「当日最大承载 16 台」原先常驻展示在输入框右侧，现在收进
+           「单日人均最大台量」自己的 ⓘ 提示里 —— 它是这个输入值的
+           派生结果，不是需要常驻可见的独立信息，常驻反而让人以为
+           那也是一个可调的字段。 -->
       <div class="cond-toolbar">
-        <!-- 作用域：工作组是谁、编排周期多长。纯信息，不接受编辑 -->
-        <span class="ctb-group">
-          <span class="ctb-label">${WORKGROUP.label}</span>
-          <span class="ctb-sep">·</span>
-          <span class="ctb-label">${WORKGROUP.size} 人</span>
-          <span class="ctb-sep">·</span>
-          <span class="ctb-label">编排周期 ${rangeLabel(CAL_PLAN)}</span>
-        </span>
-
-        <span class="ctb-div"></span>
-
-        <!-- 工作组级约束：当前唯一一条，用「台/人」输入 + 推导承载量表达 -->
+        <!-- 工作组级约束：当前唯一一条，承载值并入 tip，不再单独占位 -->
         <span class="ctb-group">
           <span class="ctb-tag">${COND_SECTIONS.group.title}</span>
-          <span class="ctb-k">${GROUP_CONDITION.label}${help(GROUP_CONDITION.tip)}</span>
+          <span class="ctb-k">${GROUP_CONDITION.label}${help(
+            GROUP_CONDITION.tip(GROUP_CONDITION.value, WORKGROUP.size))}</span>
           ${numInput(GROUP_CONDITION.value, GROUP_CONDITION.unit, 'groupMaxPerHead')}
-          <span class="gc-derived">
-            <span class="gcd-k">${GROUP_CONDITION.capacityKey}</span>
-            <b id="gcCapacity">${GROUP_CONDITION.value * WORKGROUP.size}</b>
-            <span class="gcd-u">台</span>
-          </span>
         </span>
 
         <div class="grow"></div>
@@ -1343,10 +1322,12 @@
         </span>
       </div>
 
-      <!-- 项目与设备条件：原来的卡片标题（「批量编辑」入口）降级并到
-           筛选条右侧，不再单独占一整行 -->
+      <!-- 筛选去掉了专门的「筛选」标签 —— 整条就是筛选，不需要再贴一个
+           标签说明自己是什么。「项目信息 / 动态保养间隔」靠左，是本页
+           最常用的操作，排在最前；「批量编辑」是另一个独立动作，推到
+           最右与筛选项断开，不再和「仅影响显示范围」那句提示混在一起
+           抢同一片视觉区域。 -->
       <div class="cs-filter cs-filter-standalone">
-        <span class="csf-k">${COND_SECTIONS.filterKey}</span>
         <div class="field">
           <span class="field-label">项目信息</span>
           ${dd('', [], 'control-w-lg', '请输入项目名称或项目编号')}
@@ -1358,7 +1339,6 @@
         <button class="btn btn-sm">重 置</button>
         <button class="btn btn-sm btn-primary">查 询</button>
         <div class="grow"></div>
-        <span class="csf-n">${COND_SECTIONS.filterNote}</span>
         <button class="btn btn-primary btn-sm">批量编辑</button>
       </div>
 
@@ -1399,16 +1379,23 @@
       });
     });
 
-    /* 人均上限改了，「当日最大承载」要当场跟着变 ——
-       推导值不响应就只是个装饰，用户改完还是不知道实际卡在多少台。
-       输入非法（空 / 0 / 负数）时显示「—」而不是算出 0 台：
+    /* 人均上限改了，ⓘ 提示里的「当日最大承载」文案要跟着重算 ——
+       承载值现在只活在这条 tip 里，不重算的话用户改完台量，
+       再悬停看到的还是旧的承载数字，比没有这行信息更误导。
+       输入非法（空 / 0 / 负数）时 tip 里写「—」而不是算出 0 台：
        0 台是个看起来合法的数字，会被当成真的产能上限读。 */
     const per = $('#groupMaxPerHead');
-    const cap = $('#gcCapacity');
-    if (per && cap) {
+    const tipEl = per && per.closest('.ctb-group')
+      ? $('.help-dot', per.closest('.ctb-group')) : null;
+    if (per && tipEl) {
       const sync = () => {
         const v = parseInt(per.value, 10);
-        cap.textContent = (!v || v < 1) ? '—' : v * WORKGROUP.size;
+        /* 非法输入（空/0/负数）时 tip 按 0 人份额生成，再把那句承载换成
+           「—」—— 0 台是个看起来合法的数字，会被当成真的产能上限读 */
+        const text = GROUP_CONDITION.tip(v || 0, WORKGROUP.size);
+        tipEl.dataset.tip = (!v || v < 1)
+          ? text.replace(/当日最大承载 = 0 台/, '当日最大承载 = — 台')
+          : text;
       };
       per.addEventListener('input', sync);
       /* 失焦时把非法值补回最小值 1，避免留着一个空输入框就离开这一页 */

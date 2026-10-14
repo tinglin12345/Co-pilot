@@ -2322,11 +2322,11 @@ body.plan-c .cal-val.none {
 }
 
 /* ===================== 编排条件工具条 =====================
-   上一版把「作用域 / 工作组约束 / 高级功能」做成三张纵向堆叠的卡片，
-   分类是对的，但每张卡自带标题行+内边距，三段叠完表格就被挤出首屏。
-
-   这一版把三类信息压进同一条横向工具条：区分感来自竖分隔线
-   （.ctb-div）与弱化小标签（.ctb-tag），不靠卡片边框和背景块，
+   工具条现在只装两类会变的信息：工作组约束 / 高级功能。
+   工作组本身在进这页之前就选定好了（顶部提示已经说明），不是切换入口，
+   所以不摆名称/人数/周期这类纯展示的作用域 —— 它们占位却不能编辑，
+   等于重复一遍已知信息。
+   区分感靠弱化小标签（.ctb-tag）而不是卡片边框/背景块，
    纵向只占一行的高度。 */
 .cond-toolbar {
   display: flex;
@@ -2348,19 +2348,6 @@ body.plan-c .cal-val.none {
   gap: 8px;
   flex-wrap: wrap;
 }
-
-/* 竖分隔线：三类信息之间唯一的「隔断」，比卡片边框轻得多，
-   足够让人读出「这是另一类东西」而不切断整条工具条的横向连续感 */
-.ctb-div {
-  width: 1px;
-  height: 20px;
-  background: var(--border-2);
-  flex: 0 0 auto;
-}
-
-/* 作用域纯展示，用次级色，不与下面可编辑的条件抢视觉重量 */
-.ctb-label { font-size: 13px; color: var(--text-2); white-space: nowrap; }
-.ctb-sep { font-size: 12px; color: var(--text-4); }
 
 /* 小标签：弱化的分类徽记，替代原来整行的卡片标题。
    描边而非实色底，是这条工具条里视觉权重最低的元素。 */
@@ -2385,8 +2372,9 @@ body.plan-c .cal-val.none {
 /* 高级功能整组视觉权重再压一档：是这条工具条里最不该抢注意力的部分 */
 .ctb-advanced .ctb-k { color: var(--text-2); font-size: 12px; }
 
-/* 筛选条：原先嵌在卡片内部，现在独立一行紧跟工具条之后，
-   「批量编辑」从卡片标题行降级并入这里的右侧 */
+/* 筛选条：靠左是最常用的筛选项（项目信息 / 动态保养间隔 / 重置 / 查询），
+   .grow 把「批量编辑」推到最右，两者之间不再有「筛选」标签占位，
+   因为整条本来就是筛选，不需要再贴标签说明自己是什么。 */
 .cs-filter {
   display: flex;
   align-items: center;
@@ -2395,50 +2383,13 @@ body.plan-c .cal-val.none {
   margin-bottom: 10px;
 }
 
+/* 批量编辑要被推到最右，和左侧的筛选项断开 —— 没有这条规则时
+   .grow 占位 div 不会伸展，批量编辑就贴着查询按钮，看不出两者是
+   两件独立的事（筛一下 / 批量改一批） */
+.cs-filter .grow { flex: 1 1 auto; }
+
 .cs-filter-standalone {
   padding: 8px 0;
 }
 
-.csf-k {
-  font-size: 12px;
-  color: var(--text-3);
-  padding: 1px 7px;
-  border: 1px solid var(--border-2);
-  border-radius: 10px;
-  white-space: nowrap;
-}
-
-.csf-n { font-size: 12px; color: var(--text-4); }
-
 .cs-filter .field-label { font-size: 13px; color: var(--text-2); }
-
-/* 推导出来的承载量。用分隔线断开 —— 它不是另一个可填字段，
-   是上一个字段的结果，不能长得像输入项。 */
-.gc-derived {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  padding-left: 14px;
-  border-left: 1px solid var(--border-2);
-}
-
-.gcd-k { font-size: 12px; color: var(--text-3); }
-.gcd-k::after { content: '='; margin-left: 5px; color: var(--text-4); }
-
-.gc-derived b {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--primary-active);
-  font-variant-numeric: tabular-nums;
-}
-
-.gcd-u { font-size: 12px; color: var(--text-2); }
-
-/* 阈值按内容区宽度定，不是视口宽度 —— 1600px 视口减掉侧栏后内容区
-   常落在 1300~1350px，用 1280 当断点会在完全正常的桌面宽度下
-   就触发降级，所以收到 1100px，只覆盖真正逼仄的场合 */
-@media (max-width: 1100px) {
-  .cond-toolbar { gap: 10px; }
-  .ctb-div { display: none; }
-  .cond-toolbar .ctb-group:first-child { flex-basis: 100%; }
-}

@@ -3706,6 +3706,20 @@
         openPlanFlowB('compare');
         openManualTune('2026-10-7');
         break;
+      /* 对比页点「确认应用」后弹出的二次确认框（截图里「确认应用智能编排
+         方案？」那个弹窗）。不需要人工调整也能触发 —— confirmApplyPlan
+         内部已经处理了 manualMoves 为空的情况，所以这里不调用
+         seedPlanDManualMoves，直接走未调整过的方案对比页 + 弹确认框。 */
+      case 'plan-d-apply-confirm':
+        planMode = 'D';
+        planDChoice = 'balanced';
+        planDScenario = 0;
+        manualMoves = [];
+        syncModeButtons();
+        renderView('smart');
+        openPlanFlowB('compare');
+        confirmApplyPlan();
+        break;
       default:
         renderView('smart');
     }
@@ -3830,7 +3844,8 @@
   const VALID = PROTO_SCREENS.map((s) => s.id)
     .concat(['smart-failed'], Object.keys(PLAN_D_DIRECT),
       ['plan-d-adjusted', 'plan-d-adjust-modal',
-        'plan-d-choice-shorter-only', 'plan-d-choice-both-out']);
+        'plan-d-choice-shorter-only', 'plan-d-choice-both-out',
+        'plan-d-apply-confirm']);
   const initial = location.hash.slice(1);
   goScreen(VALID.includes(initial) ? initial : 'smart');
 

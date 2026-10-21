@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<!-- 本文件由 build.js 自动生成（2026-10-14 07:22:39），已内联全部样式与脚本，
+<!-- 本文件由 build.js 自动生成（2026-10-21 06:49:37），已内联全部样式与脚本，
      可直接双击打开或发送给他人，无需任何外部文件与网络。
      请勿直接编辑此文件 —— 改动请在 css/ 与 js/ 下进行，然后重新执行 node build.js -->
 <meta charset="UTF-8" />
@@ -7466,6 +7466,22 @@ const PROTO_SCREENS = [
     'fail-unknown': 'unknown',
   };
 
+  /* 方案 D 流程里的中间状态（选哪个候选方案 / 走保底）原本只存在
+     planDChoice 这个运行时变量里，不写回 location.hash —— 所以这几个
+     状态都要先点「智能编排」生成、再点按钮选择才能看到，没法用一条
+     链接直接打开。
+
+     这里给 4 个终态各配一个 id，直接在 goScreen() 里把 planMode 强制
+     切到 D、把 planDChoice 设成对应值，跳过「先生成再点」的过程。
+     只做状态赋值 + 复用现有渲染函数，不重复 openPlanChoice /
+     openPlanFlowB 内部的逻辑。 */
+  const PLAN_D_DIRECT = {
+    'plan-d-choice': null,          // 两个候选方案的选择页
+    'plan-d-balanced': 'balanced',  // 已选「工单均衡分布」后的对比页
+    'plan-d-shorter': 'shorter',    // 已选「总工时更短」后的对比页
+    'plan-d-fallback': 'fallback',  // 保底方案页
+  };
+
   /* 原型界面导航：screen id → 视图 + 浮层状态
      同时同步到 location.hash，便于直接用链接打开某一屏 */
   let currentScreen = 'smart';
@@ -7540,6 +7556,23 @@ const PROTO_SCREENS = [
       case 'leave-modal':
         renderView('leave');
         openLeaveModal();
+        break;
+      /* 方案 D 流程的 4 个中间状态：直接把 planMode 锁定为 D、
+         把 planDChoice 设成对应值，跳过「先生成方案再逐步点选」的过程，
+         让这几个状态也能用单独链接直接打开。
+         manualMoves 清空 —— 直接跳进来的这份方案不该带着上一次会话
+         遗留的人工调整痕迹。 */
+      case 'plan-d-choice':
+      case 'plan-d-balanced':
+      case 'plan-d-shorter':
+      case 'plan-d-fallback':
+        planMode = 'D';
+        planDChoice = PLAN_D_DIRECT[id];
+        manualMoves = [];
+        syncModeButtons();
+        renderView('smart');
+        if (planDChoice === null) openPlanChoice();
+        else openPlanFlowB('compare');
         break;
       default:
         renderView('smart');
@@ -7660,8 +7693,10 @@ const PROTO_SCREENS = [
   syncProtoUi();
   syncModeButtons();
 
-  /* smart-failed 不在导航列表里，但要保持链接可用 */
-  const VALID = PROTO_SCREENS.map((s) => s.id).concat(['smart-failed']);
+  /* smart-failed 不在导航列表里，但要保持链接可用；
+     方案 D 的 4 个直达状态同理，也不进原型导航面板（面板只收录主流程截图） */
+  const VALID = PROTO_SCREENS.map((s) => s.id)
+    .concat(['smart-failed'], Object.keys(PLAN_D_DIRECT));
   const initial = location.hash.slice(1);
   goScreen(VALID.includes(initial) ? initial : 'smart');
 

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<!-- 本文件由 build.js 自动生成（2026-10-21 07:07:32），已内联全部样式与脚本，
+<!-- 本文件由 build.js 自动生成（2026-10-21 08:50:57），已内联全部样式与脚本，
      可直接双击打开或发送给他人，无需任何外部文件与网络。
      请勿直接编辑此文件 —— 改动请在 css/ 与 js/ 下进行，然后重新执行 node build.js -->
 <meta charset="UTF-8" />
@@ -7593,11 +7593,33 @@ const PROTO_SCREENS = [
       case 'plan-d-fallback':
         planMode = 'D';
         planDChoice = PLAN_D_DIRECT[id];
+        planDScenario = 0;   // 这 4 个都是「两个方案均可行」场景下的状态
         manualMoves = [];
         syncModeButtons();
         renderView('smart');
         if (planDChoice === null) openPlanChoice();
         else openPlanFlowB('compare');
+        break;
+      /* 选择页的另外两种演示场景，同样直接定位到选择页本身（还没选方案），
+         只是 planDScenario 不同 —— 对应右上角「演示场景」下拉的另两档。
+         PLAN_D_SCENARIOS 下标：0 均可行 / 1 仅「总工时更短」可行 / 2 都无可行解。 */
+      case 'plan-d-choice-shorter-only':
+        planMode = 'D';
+        planDChoice = null;
+        planDScenario = 1;
+        manualMoves = [];
+        syncModeButtons();
+        renderView('smart');
+        openPlanChoice();
+        break;
+      case 'plan-d-choice-both-out':
+        planMode = 'D';
+        planDChoice = null;
+        planDScenario = 2;
+        manualMoves = [];
+        syncModeButtons();
+        renderView('smart');
+        openPlanChoice();
         break;
       /* 已含手动调整的对比页：预置两条搬移记录（seedPlanDManualMoves），
          直接显示「含手动调整 N 天」标签与紫色调整角标，不需要先手点几次。 */
@@ -7745,7 +7767,8 @@ const PROTO_SCREENS = [
      方案 D 的直达状态同理，也不进原型导航面板（面板只收录主流程截图） */
   const VALID = PROTO_SCREENS.map((s) => s.id)
     .concat(['smart-failed'], Object.keys(PLAN_D_DIRECT),
-      ['plan-d-adjusted', 'plan-d-adjust-modal']);
+      ['plan-d-adjusted', 'plan-d-adjust-modal',
+        'plan-d-choice-shorter-only', 'plan-d-choice-both-out']);
   const initial = location.hash.slice(1);
   goScreen(VALID.includes(initial) ? initial : 'smart');
 

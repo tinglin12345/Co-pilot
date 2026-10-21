@@ -3720,6 +3720,26 @@
         openPlanFlowB('compare');
         confirmApplyPlan();
         break;
+      /* 同一个确认框，但默认展开第一个项目分组的工单明细 ——
+         「展开」本身是纯 DOM 交互（点 .pg-toggle 摘掉 hidden class），
+         没有自己的路由状态，所以直接复用 plan-d-apply-confirm 的场景，
+         在弹窗渲染完之后再模拟点一次第一个展开按钮，省得用户手动点。
+         预置一条人工调整（seedPlanDManualMoves）是为了让展开后的明细表里
+         同时出现「手动」与「智能编排」两种标签，与截图一致。 */
+      case 'plan-d-apply-confirm-expanded':
+        planMode = 'D';
+        planDChoice = 'balanced';
+        planDScenario = 0;
+        seedPlanDManualMoves();
+        syncModeButtons();
+        renderView('smart');
+        openPlanFlowB('compare');
+        confirmApplyPlan();
+        setTimeout(() => {
+          const btn = $('#applyConfirmLayer .pg-toggle[data-pg="0"]');
+          if (btn) btn.click();
+        }, 0);
+        break;
       default:
         renderView('smart');
     }
@@ -3845,7 +3865,7 @@
     .concat(['smart-failed'], Object.keys(PLAN_D_DIRECT),
       ['plan-d-adjusted', 'plan-d-adjust-modal',
         'plan-d-choice-shorter-only', 'plan-d-choice-both-out',
-        'plan-d-apply-confirm']);
+        'plan-d-apply-confirm', 'plan-d-apply-confirm-expanded']);
   const initial = location.hash.slice(1);
   goScreen(VALID.includes(initial) ? initial : 'smart');
 

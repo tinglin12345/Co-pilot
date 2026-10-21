@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<!-- 本文件由 build.js 自动生成（2026-10-21 06:49:37），已内联全部样式与脚本，
+<!-- 本文件由 build.js 自动生成（2026-10-21 07:07:32），已内联全部样式与脚本，
      可直接双击打开或发送给他人，无需任何外部文件与网络。
      请勿直接编辑此文件 —— 改动请在 css/ 与 js/ 下进行，然后重新执行 node build.js -->
 <meta charset="UTF-8" />
@@ -7482,6 +7482,31 @@ const PROTO_SCREENS = [
     'plan-d-fallback': 'fallback',  // 保底方案页
   };
 
+  /* 「已有手动调整」与「编排调整弹窗」这两个状态同样只活在运行时的
+     manualMoves / 弹窗参数里，没有预置数据就无法直接用链接打开。
+     这里按 CAL_COMPARE 里真实存在搬移空间的日期（10/7 搬出一部分、
+     10/8 搬出一部分、10/9 再搬进一部分）现算出一组确定性的演示搬移，
+     口径与 openManualTune 内部完全一致（dayLoadBeforeOut + ordersForDay），
+     不手写台数/工时，否则会和日历上真实显示的数字对不上。 */
+  function seedPlanDManualMoves() {
+    const moves = [
+      { from: '2026-10-7', to: '2026-10-10', keepUnits: 0 },   // 10/7 整天搬到 10/10
+      { from: '2026-10-8', to: '2026-10-9', keepUnits: 27 },  // 10/8 搬走一部分，留 27 台在原地
+    ];
+    manualMoves = moves.map((m) => {
+      const base = dayLoadBeforeOut(m.from);     // [台数, 工时]
+      const moveUnits = base[0] - m.keepUnits;
+      const moveMinutes = Math.round(base[1] * 60 * (moveUnits / base[0]));
+      const orders = ordersForDay(m.from, moveUnits, moveMinutes);
+      const proj = projectForDay(m.from);
+      const hours = Math.round(orders.reduce((s, o) => s + o.minutes, 0) / 60 * 100) / 100;
+      return {
+        from: m.from, to: m.to, units: moveUnits, hours, orders,
+        project: proj.name, code: proj.code,
+      };
+    });
+  }
+
   /* 原型界面导航：screen id → 视图 + 浮层状态
      同时同步到 location.hash，便于直接用链接打开某一屏 */
   let currentScreen = 'smart';
@@ -7573,6 +7598,29 @@ const PROTO_SCREENS = [
         renderView('smart');
         if (planDChoice === null) openPlanChoice();
         else openPlanFlowB('compare');
+        break;
+      /* 已含手动调整的对比页：预置两条搬移记录（seedPlanDManualMoves），
+         直接显示「含手动调整 N 天」标签与紫色调整角标，不需要先手点几次。 */
+      case 'plan-d-adjusted':
+        planMode = 'D';
+        planDChoice = 'balanced';
+        seedPlanDManualMoves();
+        syncModeButtons();
+        renderView('smart');
+        openPlanFlowB('compare');
+        break;
+      /* 在上面那个状态的基础上，再叠一层编排调整弹窗（选中 10/7 这天，
+         与截图一致）。直接复用 openManualTune —— 它会自动识别 10/7
+         已经被调整过，于是把原日期定位到 mv.from、迷你日历默认选中 mv.to，
+         和真实点击「调整」角标进来的效果完全一致，不必另写一套弹窗参数。 */
+      case 'plan-d-adjust-modal':
+        planMode = 'D';
+        planDChoice = 'balanced';
+        seedPlanDManualMoves();
+        syncModeButtons();
+        renderView('smart');
+        openPlanFlowB('compare');
+        openManualTune('2026-10-7');
         break;
       default:
         renderView('smart');
@@ -7694,9 +7742,10 @@ const PROTO_SCREENS = [
   syncModeButtons();
 
   /* smart-failed 不在导航列表里，但要保持链接可用；
-     方案 D 的 4 个直达状态同理，也不进原型导航面板（面板只收录主流程截图） */
+     方案 D 的直达状态同理，也不进原型导航面板（面板只收录主流程截图） */
   const VALID = PROTO_SCREENS.map((s) => s.id)
-    .concat(['smart-failed'], Object.keys(PLAN_D_DIRECT));
+    .concat(['smart-failed'], Object.keys(PLAN_D_DIRECT),
+      ['plan-d-adjusted', 'plan-d-adjust-modal']);
   const initial = location.hash.slice(1);
   goScreen(VALID.includes(initial) ? initial : 'smart');
 

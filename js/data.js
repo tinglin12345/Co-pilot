@@ -1006,6 +1006,7 @@ const PROTO_SCREENS = [
   { id: 'plan', label: '查看智能编排方案', shot: '截图 3' },
   { id: 'compare', label: '智能编排方案对比', shot: '截图 2' },
   { id: 'adjust', label: '编排调整弹窗', shot: '截图 1' },
+  { id: 'smart-records', label: '智能编排记录', shot: '新增' },
   { id: 'conditions', label: '智能编排条件设置', shot: '截图 7 / 8' },
   { id: 'leave', label: '人员安排列表', shot: '截图 6' },
   { id: 'leave-modal', label: '人员安排设置', shot: '截图 5' },

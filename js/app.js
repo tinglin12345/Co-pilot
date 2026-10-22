@@ -3634,6 +3634,10 @@
         renderView('smart');
         openAdjust();
         break;
+      case 'smart-records':   // 智能编排记录（操作历史）
+        renderView('smart');
+        openSmartRecords();
+        break;
       case 'conditions':
         renderView('conditions');
         break;

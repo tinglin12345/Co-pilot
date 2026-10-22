@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<!-- 本文件由 build.js 自动生成（2026-10-21 09:35:42），已内联全部样式与脚本，
+<!-- 本文件由 build.js 自动生成（2026-10-21 09:53:38），已内联全部样式与脚本，
      可直接双击打开或发送给他人，无需任何外部文件与网络。
      请勿直接编辑此文件 —— 改动请在 css/ 与 js/ 下进行，然后重新执行 node build.js -->
 <meta charset="UTF-8" />
@@ -3928,6 +3928,7 @@ const PROTO_SCREENS = [
   { id: 'plan', label: '查看智能编排方案', shot: '截图 3' },
   { id: 'compare', label: '智能编排方案对比', shot: '截图 2' },
   { id: 'adjust', label: '编排调整弹窗', shot: '截图 1' },
+  { id: 'smart-records', label: '智能编排记录', shot: '新增' },
   { id: 'conditions', label: '智能编排条件设置', shot: '截图 7 / 8' },
   { id: 'leave', label: '人员安排列表', shot: '截图 6' },
   { id: 'leave-modal', label: '人员安排设置', shot: '截图 5' },
@@ -7571,6 +7572,10 @@ const PROTO_SCREENS = [
       case 'adjust':
         renderView('smart');
         openAdjust();
+        break;
+      case 'smart-records':   // 智能编排记录（操作历史）
+        renderView('smart');
+        openSmartRecords();
         break;
       case 'conditions':
         renderView('conditions');
